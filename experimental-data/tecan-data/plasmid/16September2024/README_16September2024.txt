@@ -1,0 +1,13 @@
+E0224, E0224 F+, E0224 F+ M13+, E0224 O+, E0224 O+ M13+
+
+Facilitation, mutualism or competition with S0240
+
+F+ and O+ conditions plated at the end to see if there are any S0240 lac+ transconjugants
+
+E and FM conditions did not grow overnight prior to start, so discard the following conditions: E+S comp, FM+S comp, E mono, FM mono, E+S coop, E+S fan
+
+Several monocultures didn't grow, so discard:
+O, OM
+
+Completed by ATB
+
