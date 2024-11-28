@@ -1,0 +1,69 @@
+"","product","gene","function."
+"1","hypothetical protein",NA,NA
+"2","conjugal transfer pilus acetylase TraX","traX",NA
+"3","conjugative transfer relaxase/helicase TraI","traI",NA
+"4","toxin-antitoxin system antitoxin VapB","vapB",NA
+"5","type II toxin-antitoxin system VapC familytoxin",NA,NA
+"6","type IV conjugative transfer system couplingprotein TraD","traD",NA
+"7","conjugal transfer complement resistance proteinTraT","traT",NA
+"8","conjugal transfer entry exclusion protein TraS","traS",NA
+"9","conjugal transfer mating-pair stabilizationprotein TraG","traG",NA
+"10","conjugal transfer pilus assembly protein TraH","traH",NA
+"11","F-type conjugal transfer protein TrbF","trbF",NA
+"12","P-type conjugative transfer protein TrbJ","trbJ",NA
+"13","type-F conjugative transfer system pilinassembly thiol-disulfide isomerase TrbB","trbB",NA
+"14","type-F conjugative transfer system pilinchaperone TraQ","traQ",NA
+"15","protein ArtA",NA,NA
+"16","conjugal transfer protein TrbA","trbA",NA
+"17","type-F conjugative transfer system pilinassembly protein TraF","traF",NA
+"18","conjugal transfer protein TrbE",NA,NA
+"19","type-F conjugative transfer system mating-pairstabilization protein TraN","traN",NA
+"20","type-F conjugative transfer system pilinassembly protein TrbC","trbC",NA
+"21","conjugal transfer pilus assembly protein TraU","traU",NA
+"22","type-F conjugative transfer system protein TraW","traW",NA
+"23","type-F conjugative transfer system protein TrbI","trbI",NA
+"24","type IV secretion system protein TraC","traC",NA
+"25","conjugal transfer protein TraR","traR",NA
+"26","type IV conjugative transfer system lipoproteinTraV","traV","F pilus assembly"
+"27","conjugal transfer protein TrbG","trbG",NA
+"28","conjugal transfer protein TrbD",NA,NA
+"29","conjugal transfer pilus-stabilizing proteinTraP","traP",NA
+"30","F-type conjugal transfer pilus assembly proteinTraB","traB",NA
+"31","type-F conjugative transfer system secretinTraK","traK",NA
+"32","type IV conjugative transfer system proteinTraE","traE",NA
+"33","type IV conjugative transfer system proteinTraL","traL",NA
+"34","type IV conjugative transfer system pilin TraA","traA",NA
+"35","conjugal transfer relaxosome DNA-bindin proteinTraY","traY",NA
+"36","conjugal transfer transcriptional regulatorTraJ","traJ",NA
+"37","conjugal transfer relaxosome DNA-binding proteinTraM","traM",NA
+"38","transglycosylase SLT domain-containing protein",NA,NA
+"39","DUF932 domain-containing protein",NA,NA
+"40","hypothetical protein",NA,NA
+"41","hypothetical protein",NA,NA
+"42","type I toxin-antitoxin system Hok family toxin",NA,NA
+"43","plasmid SOS inhibition protein A",NA,NA
+"44","conjugation system SOS inhibitor PsiB","psiB",NA
+"45","ParB/RepB/Spo0J family partition protein",NA,NA
+"46","DUF905 family protein",NA,NA
+"47","single-stranded DNA-binding protein",NA,NA
+"48","hypothetical protein",NA,NA
+"49","hypothetical protein",NA,NA
+"50","DUF1380 family protein",NA,NA
+"51","antirestriction protein",NA,NA
+"52","hypothetical protein",NA,NA
+"53","DUF1380 family protein",NA,NA
+"54","hypothetical protein",NA,NA
+"55","DNA methylase",NA,NA
+"56","hypothetical protein",NA,NA
+"57","DUF1281 domain-containing protein",NA,NA
+"58","ParB/RepB/Spo0J family plasmid partitionprotein",NA,NA
+"59","plasmid-partitioning protein SopA","sopA",NA
+"60","replication initiation protein RepE","repE",NA
+"61","site-specific integrase",NA,NA
+"62","type II toxin-antitoxin system toxin CcdB","ccdB",NA
+"63","type II toxin-antitoxin system antitoxin CcdA","ccdA",NA
+"64","tetracycline efflux MFS transporter Tet(B)","tet(B)",NA
+"65","tetracycline resistance transcriptionalrepressor TetR(B)","tetR(B)",NA
+"66","acyl-CoA reductase",NA,NA
+"67","acyl transferase",NA,NA
+"68","long-chain-fatty-acid--CoA ligase",NA,NA
