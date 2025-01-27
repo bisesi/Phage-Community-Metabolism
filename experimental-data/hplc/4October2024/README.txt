@@ -1,0 +1,1 @@
+Promega Lactate Glo-assay kit performed on spent media from E0224 infected with all three parasites of interest or MG1655 WT infected with F128 or M13.

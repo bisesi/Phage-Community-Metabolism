@@ -1,0 +1,1 @@
+Transcriptomic data performed in 2020 on S0240 in monoculture or S0240 with E0224. 
