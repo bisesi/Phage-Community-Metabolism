@@ -5,23 +5,21 @@
 # load packages
 library("tidyverse")
 library("readxl")
-library("patchwork")
 library("ggtext")
-library("ggpubr")
 library("cowplot")
-library("chromatographR")
-library("broom")
+library("ggpubr")
+library("rstatix")
 library("ggVennDiagram")
-library("ggfortify")
-library("ggpubfigs")
+library("pmp")
+library("scales")
+
+#load functions
+source(here::here("functions", "tecan-data-helper-functions.R"))
+source(here::here("functions", "baranyi-helper-functions.R"))
 
 # load metabolomics data
 midlog <- read_csv(here::here("experimental-data", "metabolomics", "spent-media-metabolomics-cfus.csv")) %>%
   janitor::clean_names()
-
-unnorm <- read_excel(here::here("experimental-data", "metabolomics", "ALL_sample_data.xlsx")) %>%
-  janitor::clean_names() %>% dplyr::select(-c(index, q1_da, molecular_weight_da, formula, ionization_model, level, cpd_id, hmdb, pub_chem_cid,
-                                              cas, ch_ebi, metlin, kegg_map, class_i, class_ii))
 
 raw_metabolites <- read_excel(here::here("experimental-data", "metabolomics", "ALL_sample_data.xlsx")) %>%
   janitor::clean_names() %>% dplyr::select(-c(index, q1_da, molecular_weight_da, formula, ionization_model, level, cpd_id, hmdb, pub_chem_cid,
@@ -108,6 +106,26 @@ rates <- rbind(nov6, nov20) %>%
   summarize(model_fit = fit_baranyi(hour, log(value), 5),
             fit_variable = c("growth_rate", "lag", "ymax", "y0")) %>% ungroup() %>% filter(fit_variable %in% c("growth_rate"))
 
+stats <- rbind(nov6, nov20) %>% 
+  group_by(well, date, strain, partner) %>% filter(value == max(value)) %>% slice_head() %>%
+  select(well, date, strain, partner, value) %>% ungroup() %>% rename(model_fit = value) %>% mutate(fit_variable = "max OD600") %>%
+  rbind(., rates) %>% mutate(fit_variable = ifelse(fit_variable == "growth_rate", "growth rate", fit_variable)) %>%
+  mutate(strain = case_when(strain == "E0224" ~ "uninf",
+                            strain == "E0224 F+" ~ "F128+",
+                            strain == "E0224 F+ M13+" ~ "F128+<br>M13+"),
+         strain = factor(strain, levels = c("uninf", "F128+", "F128+<br>M13+"))) %>%
+  group_by(fit_variable) %>%
+  tukey_hsd(model_fit ~ strain) %>%
+  add_xy_position(x = "strain") %>%
+  mutate(y.position = case_when((fit_variable == "growth rate" & group1 == "uninf" & group2 == "F128+<br>M13+") ~ 0.77,
+                                (fit_variable == "growth rate" & group1 == "uninf" & group2 == "F128+") ~ 0.72,
+                                 (fit_variable == "growth rate" & group1 == "F128+" & group2 == "F128+<br>M13+") ~ 0.82,
+                                 (fit_variable == "max OD600" & group1 == "uninf" & group2 == "F128+") ~ 0.36,
+                                 (fit_variable == "max OD600" & group1 == "uninf" & group2 == "F128+<br>M13+") ~ 0.38,
+                                 (fit_variable == "max OD600" & group1 == "F128+" & group2 == "F128+<br>M13+") ~ 0.40,
+                                 TRUE ~ y.position)) %>%
+  mutate(label = paste0(scientific(p.adj,digits = 2), " (", p.adj.signif, ")"))
+
 partB <- rbind(nov6, nov20) %>% 
   group_by(well, date, strain, partner) %>% filter(value == max(value)) %>% slice_head() %>%
   select(well, date, strain, partner, value) %>% ungroup() %>% rename(model_fit = value) %>% mutate(fit_variable = "max OD600") %>%
@@ -118,38 +136,57 @@ partB <- rbind(nov6, nov20) %>%
          strain = factor(strain, levels = c("uninf", "F128+", "F128+<br>M13+"))) %>%
   ggplot(aes(x = strain, y = model_fit, color = strain)) +
   geom_point(size = 2, stroke = 1.5) +
+  stat_pvalue_manual(stats, label = "label", tip.length = 0.0, size = 3) +
   stat_summary(aes(fill = strain), position = position_dodge(0.5), fun = mean, shape = '-', size = 5, color = 'black')+
   facet_wrap(~fit_variable, scales = "free") +
   ylab("monoculture estimate") +
-  scale_color_manual(values = c("uninf" = "#F5793A", "F128+" = "#A95AA1", "F128+<br>M13+" = "#0F2080")) +
+  scale_y_continuous(expand = expansion(mult = c(0, 0.1))) +
+  scale_color_manual(values = c("uninf" = "black", "F128+" = "#117733", "F128+<br>M13+" = "#88CCEE")) +
   theme_bw(base_size = 16) + theme(axis.text = element_markdown(), axis.title.x = element_blank(),
                                    legend.position = "none", strip.background = element_blank())
 
 # part C - PCA
-effm <- unnorm %>% select(compounds, e1_midlog:pm3_midlog) %>% pivot_longer(cols = c(e1_midlog:pm3_midlog)) %>% 
-  pivot_wider(names_from = compounds, values_from = value) %>%
-  mutate(name = case_when(name %in% c("e1_midlog", "e2_midlog", "e3_midlog") ~ "uninf", 
-                          name %in% c("p1_midlog", "p2_midlog", "p3_midlog") ~ "F128+",
-                          name %in% c("pm1_midlog", "pm2_midlog", "pm3_midlog") ~ "F128+ M13+"))
+effm <- raw_metabolites %>% select(compounds, c(e1_midlog:pm3_midlog, qc01:qc03)) 
 
-for_pca <- effm[ , which(apply(effm, 2, var) != 0)]
+for_pca <- as.matrix(effm[,-c(1)])
 
-pca <- stats::prcomp(for_pca, scale. = TRUE)
-summ <- summary(pca)$importance[2,]
+qc <- which(grepl("qc", colnames(for_pca)) == TRUE)
+indices <- which(grepl("qc", colnames(for_pca)) != TRUE)
+name_vector <- c(rep("E", 3), rep("P", 3), rep("PM", 3), rep("qc", 3))
 
-components <- data.frame(pca$x, Species = effm$name)
+for_pca <- for_pca[rowSums(is.na(for_pca)) != ncol(for_pca), ]
 
-partC <- components %>% ggplot(aes(x = PC1, y = PC2, color = Species)) + geom_point(size = 4) +
-  xlab(paste0("PC1 (", round(summ[1] * 100,2), "%)")) +
-  ylab(paste0("PC2 (", round(summ[2] * 100,2), "%)")) +
-  scale_color_manual(values = c("uninf" = "#F5793A", "F128+" = "#A95AA1", "F128+ M13+" = "#0F2080")) +
+subset_data <- pqn_normalisation(for_pca, classes=name_vector[c(indices,qc)], qc_label="qc")
+subset_data <- mv_imputation(subset_data, method="KNN", k=5, rowmax=0.5,
+                             colmax=0.5, maxp=NULL, check_df=FALSE)
+subset_data <- glog_transformation(subset_data, classes=name_vector[c(indices,qc)], qc_label="qc")
+clean_QCs <- subset_data[, -grep("qc", colnames(subset_data))]
+clean_QCs <- prcomp(t(clean_QCs), center=TRUE, scale=FALSE)
+
+get_variance <- round(((clean_QCs$sdev^2)/sum(clean_QCs$sdev^2)*100)[1:2],2)
+
+data <- data.frame(PC1=clean_QCs$x[, 1], PC2=clean_QCs$x[, 2],class=factor(name_vector[c(indices)], 
+                                                                           levels = unique(name_vector[c(indices)][length(name_vector[c(indices)]):1])))
+
+partC <- data %>% mutate(class = case_when(class == "E" ~ "uninf",
+                                           class == "P" ~ "F128+",
+                                           class == "PM" ~ "F128+ M13+")) %>%
+  mutate(class = factor(class, levels = c("uninf", "F128+", "F128+ M13+"))) %>%
+                           ggplot(aes(x = PC1, y = PC2, color = class)) + geom_point(size = 4) +
+  xlab(paste0("PC1 (", get_variance[1], "%)")) +
+  ylab(paste0("PC2 (", get_variance[2], "%)")) +
+  scale_color_manual(values = c("uninf" = "black", "F128+" = "#117733", "F128+ M13+" = "#88CCEE")) +
   theme_bw(base_size = 16) + theme(axis.text.x = element_markdown(), legend.position = "none")
 
-legendC <- get_plot_component(components %>% mutate(Species = factor(Species, levels = c("uninf", "F128+", "F128+ M13+"))) %>% ggplot(aes(x = PC1, y = PC2, color = Species)) + geom_point(size = 4) +
-                                xlab(paste0("PC1 (", round(summ[1] * 100,2), "%)")) +
-                                ylab(paste0("PC2 (", round(summ[2] * 100,2), "%)")) + labs(color = "")+
-                                scale_color_manual(values = c("uninf" = "#F5793A", "F128+" = "#A95AA1", "F128+ M13+" = "#0F2080")) +
-                                theme_bw(base_size = 16) + theme(axis.text.x = element_markdown(), legend.position = "bottom"),
+legendC <- get_plot_component(data %>% mutate(class = case_when(class == "E" ~ "uninf",
+                                                                class == "P" ~ "F128+",
+                                                                class == "PM" ~ "F128+ M13+")) %>%
+                                mutate(class = factor(class, levels = c("uninf", "F128+", "F128+ M13+"))) %>%
+                                ggplot(aes(x = PC1, y = PC2, color = class)) + geom_point(size = 4) +
+                                xlab(paste0("PC1 (", get_variance[1], "%)")) +
+                                ylab(paste0("PC2 (", get_variance[2], "%)")) +
+                                scale_color_manual(values = c("uninf" = "black", "F128+" = "#117733", "F128+ M13+" = "#88CCEE")) +
+                                theme_bw(base_size = 16) + theme(axis.text.x = element_markdown(), legend.position = "bottom", legend.title = element_blank()),
                                 'guide-box-bottom', return_all = TRUE)
 
 # part D - venn diagram of detected compounds
@@ -164,7 +201,7 @@ fm <- raw_metabolites %>% select(compounds, pm1_midlog, pm2_midlog, pm3_midlog) 
 
 metabolites <- list(uninf = e, F128 = f, F128_M13 = fm)
 
-partD <- ggVennDiagram(metabolites, label_alpha=0, category.names = c("unif","F128+","F128+ M13+")) + 
+partD <- ggVennDiagram(metabolites, label_alpha=0, category.names = c("uninf","F128+","F128+ M13+")) + 
   theme_void(base_size = 16) + theme(legend.position = "none", axis.title = element_blank()) + 
   scale_fill_gradient(low="white",high = "white")
 
@@ -297,6 +334,7 @@ partF <- metabolism_ecoli_frame %>%
                                                     class_i == "Organic acid and Its derivatives" ~ "organic acids",
                                                     class_i == "Carbohydrates and Its metabolites" ~ "carbohydrates",
                                                     class_i == "Heterocyclic compounds" ~ "heterocyclics")) %>%
+  filter(class_i %in% c("aldehydes", "amino acids", "nucleotides", "organic acids")) %>%
   ggplot(aes(x = fct_reorder(class_i, n), y = (n / total) * 100)) +
   geom_bar(stat = "identity") + facet_wrap(~comparison) + coord_flip() + ylab("percent of significant compounds") +
   theme_bw(base_size = 16) + theme(strip.background = element_blank(), axis.text.x = element_markdown(), axis.title.y = element_blank(),
@@ -309,9 +347,6 @@ hplc <- read_csv(here::here("experimental-data", "hplc", "24April2024", "aggrega
                                   grepl("blank", sampleID) == TRUE ~ "blank",
                                   sampleID %in% c("e1", "e2", "e3", "f1", "f2", "f4", "fm1", "fm3", "fm4") ~ "sample",
                                   TRUE ~ sampleID))
-cfus <- read_csv(here::here("experimental-data", "hplc", "24April2024", "final-CFUs_spent-media_samples17April2024.csv")) %>% 
-  mutate_all(~replace(., is.na(.), 0)) %>% 
-  dplyr::mutate(CFU = ifelse(sampleID %in% c("E1", "E2", "E3"), CFUnotet, ((CFUnotet + CFUtet) / 2))) %>% dplyr::select(sampleID, CFU)
 
 partG <- hplc %>% filter(class == "sample") %>% 
   dplyr::mutate(strain = case_when(sampleID %in% c("e1", "e2", "e3") ~ "E0224",
@@ -340,7 +375,7 @@ middle <- plot_grid(plot_grid(partC, legendC, ncol = 1, rel_heights = c(1,0.1)),
 bottom <- plot_grid(partF, partG, ncol = 2, labels = c("F", "G"), label_size = 26, rel_widths = c(0.7,1))
 figure2 <- plot_grid(top, middle, bottom, ncol = 1, rel_heights = c(0.9,0.9,1))
 
-png(here::here("figures", "final-figs", "imgs", "figure-2.png"), res = 300, width = 4250, height = 3000)
+png(here::here("figures", "final-figs", "imgs", "figure-2.png"), res = 300, width = 4250, height = 3250)
 figure2
 dev.off()
 

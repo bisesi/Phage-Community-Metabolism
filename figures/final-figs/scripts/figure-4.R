@@ -5,15 +5,15 @@
 # load packages
 library("tidyverse")
 library("readxl")
-library("patchwork")
 library("ggtext")
-library("ggpubr")
 library("cowplot")
-library("chromatographR")
-library("broom")
-library("ggVennDiagram")
-library("ggfortify")
-library("ggpubfigs")
+library("ggpubr")
+library("rstatix")
+library("scales")
+
+#load functions
+source(here::here("functions", "tecan-data-helper-functions.R"))
+source(here::here("functions", "baranyi-helper-functions.R"))
 
 # part A - metabolomics volcano plots
 midlog <- read_csv(here::here("experimental-data", "metabolomics", "spent-media-metabolomics-cfus.csv")) %>%
@@ -213,100 +213,105 @@ partB <- partner_frame %>%
                              class_i == "Carbohydrates and Its metabolites" ~ "carbohydrates",
                              class_i == "Heterocyclic compounds" ~ "heterocyclics",
                              class_i == "Others" ~ "other")) %>%
+  filter(class_i %in% c("aldehydes", "amino acids", "nucleotides", "organic acids")) %>%
   ggplot(aes(x = fct_reorder(class_i, n), y = (n / total) * 100)) +
   geom_bar(stat = "identity") + facet_grid(parasite~partner, scale = "free") + coord_flip() + ylab("percent of significant compounds") +
   theme_bw(base_size = 16) + theme(strip.background = element_blank(), axis.text.x = element_markdown(), axis.title.y = element_blank(),
                                    strip.text = element_markdown())
 
 # part C - lactate depletion
-no_data <- data.frame(compounds = c("Lactic acid"), log2fc = c(0.005, 0.005), partner = c("M0"), parasite = c("uninf", "F128+"))
+pvals <- partner_frame %>% filter(compounds == "Lactic acid") %>%
+  mutate(partner = ifelse(grepl("_s", comparison) == TRUE, "*S. enterica*", "none")) %>%
+  mutate(partner = ifelse(grepl("_m", comparison) == TRUE, "*M. extorquens*", partner)) %>%
+  mutate(baseline = case_when(comparison %in% c("infected_s infected", "infected_m infected") ~ "phage",
+                              comparison == "plasmid_s plasmid" ~ "plasmid",
+                              comparison == "uninfected_s uninfected" ~ "uninfected"))
 
-partC <- partner_frame %>%
-  dplyr::mutate(partner = ifelse(comparison == "infected_m infected", "*M. extorquens*", "*S. enterica*")) %>%
-  dplyr::mutate(parasite = case_when(comparison == "infected_m infected" | comparison == "infected_s infected" ~ "F128+<br>M13+",
-                                     comparison == "uninfected_s uninfected" | comparison == "infected_s infected" ~ "uninf",
-                                     comparison == "plasmid_s plasmid" ~ "F128+"),
-                partner = factor(partner, levels = c("*S. enterica*", "*M. extorquens*"))) %>%
-  dplyr::mutate(colors = ifelse(-log10(as.numeric(p.adj)) <= -log10(0.05), "non sig", "sig")) %>%
-  dplyr::mutate(shape = ifelse(compounds == "Lactic acid", "shape", "no shape")) %>%
+partC <- raw_metabolites %>% filter(compounds == "Lactic acid") %>% 
+  pivot_longer(cols = c(e1_midlog:m_pm3_depleted)) %>% 
+  dplyr::select(-c(qc01, qc02, qc03)) %>% 
+  mutate(baseline = case_when(name %in% c("e1_midlog", "e2_midlog", "e3_midlog") ~ "uninfected", 
+                   name %in% c("p1_midlog", "p2_midlog", "p3_midlog") ~ "plasmid", 
+                   name %in% c("pm1_midlog", "pm2_midlog", "pm3_midlog") ~ "phage", 
+                   name %in% c("s_e1_depleted", "s_e2_depleted", "s_e3_depleted") ~ "uninfected", 
+                  name %in% c("s_p1_depleted", "s_p2_depleted", "s_p3_depleted") ~ "plasmid", 
+                  name %in% c("s_pm1_depleted", "s_pm2_depleted", "s_pm3_depleted") ~ "phage", 
+                  name %in% c("m_pm1_depleted", "m_pm2_depleted", "m_pm3_depleted") ~ "phage")) %>%
+  mutate(partner = ifelse(grepl("s_", name) == TRUE, "*S. enterica*", "none")) %>%
+  mutate(partner = ifelse(grepl("m_", name) == TRUE, "*M. extorquens*", partner)) %>%
+  group_by(baseline, partner) %>% mutate(rep = 1:n()) %>% ungroup() %>%
+  dplyr::select(-c(name)) %>%
+  pivot_wider(names_from = partner, values_from = value) %>%
+  mutate(log2fc_s = log2(`*S. enterica*` / none)) %>%
+  mutate(log2fc_m = log2(`*M. extorquens*` / none)) %>% dplyr::select(baseline, rep, log2fc_s, log2fc_m) %>%
+  pivot_longer(cols = c(log2fc_s:log2fc_m)) %>% rename(log2fc = value) %>% 
+  mutate(partner = ifelse(name == "log2fc_s", "*S. enterica*", "*M. extorquens*")) %>% dplyr::select(-c(name)) %>%
+  inner_join(., pvals %>% select(p.adj, partner, baseline), by = c("partner", "baseline")) %>%
+  mutate(parasite = case_when(baseline == "phage" ~ "F128+<br>M13+",
+                              baseline == "plasmid" ~ "F128+",
+                              baseline == "uninfected" ~ "uninf")) %>%
   dplyr::mutate(parasite = factor(parasite, levels = c("uninf", "F128+", "F128+<br>M13+"))) %>%
-  select(compounds, log2fc, partner, parasite) %>%
-  filter(compounds == "Lactic acid") %>%
-  rbind(., no_data) %>%
-  ggplot(aes(x = parasite, y = as.numeric(log2fc), fill = partner)) +
-  geom_bar(stat = "identity", position = position_dodge(0.9)) +
-  ylab("lactate depletion") +
-  geom_hline(yintercept = 0, color = "red", linetype = "dashed") +
-  scale_fill_manual(values = c("*S. enterica*" = "#DDAA33", "*M. extorquens*" = "#BB5566")) +
-  theme_bw(base_size = 16)+
-  theme(axis.text = element_markdown(),
-        legend.position = "none", strip.background = element_blank(), axis.title.x = element_blank(),
-        strip.text = element_markdown())
-
-# part D - galK/pss bioassay
-date <- "18June2024"
-
-OD_path <- generate_paths("od", date, "csv")
-JFP_path <- generate_paths("jfp", date, "csv")
-CFP_path <- generate_paths("cfp", date, "csv")
-YFP_path <- generate_paths("yfp", date, "csv")
-RFP_path <- generate_paths("rfp", date, "csv")
-cfus <- generate_paths("cfu", date, "xlsx")
-
-OD <- import_tecan_data(here::here("experimental-data", "tecan-data", "auxotroph-bioassays", date, OD_path), "OD") %>% filter(!is.na(cycle))
-CFP <- import_tecan_data(here::here("experimental-data", "tecan-data", "auxotroph-bioassays", date, CFP_path), "CFP") %>% filter(!is.na(cycle))
-YFP <- import_tecan_data(here::here("experimental-data", "tecan-data", "auxotroph-bioassays", date, YFP_path), "YFP") %>% filter(!is.na(cycle))
-RFP <- import_tecan_data(here::here("experimental-data", "tecan-data", "auxotroph-bioassays", date, RFP_path), "RFP") %>% filter(!is.na(cycle))
-plate_layout <- read_csv(here::here("experimental-data", "tecan-data", "auxotroph-bioassays", date, "plate_layout.csv")) %>%
-  janitor::clean_names()
-CFU <- load_pfu_data(here::here("experimental-data", "tecan-data","auxotroph-bioassays", date, cfus)) %>%
-  filter(!is.na(cfu))
-
-all_data_plate1 <- OD %>%
-  inner_join(., CFP %>% select(cycle, well, CFP), by = c("well", "cycle")) %>%
-  inner_join(., RFP %>% select(cycle, well, RFP), by = c("well", "cycle")) %>%
-  inner_join(., YFP %>% select(cycle, well, YFP), by = c("well", "cycle")) %>%
-  inner_join(., plate_layout %>% filter(plate_number == 1), by = c("well")) %>%
-  rename(partner = media) %>%
-  filter(strain != "none") %>%
-  mutate(partner = ifelse(partner == "none", NA, partner))
-
-partD <- CFU %>% select(well, cfu, plate, plate_number) %>%
-  inner_join(., plate_layout, by = c("well", "plate_number")) %>%
-  rename(partner = media) %>%
-  filter(plate_number == 1) %>%
-  pivot_wider(names_from = plate, values_from = cfu) %>%
-  mutate(total_biomass = E + all_S,
-         total_S_ratio = all_S / (E + all_S),
-         percent_of_S_as_KO = KO / all_S) %>%
-  pivot_longer(cols = total_biomass:percent_of_S_as_KO, names_to = "comparison") %>%
-  filter(comparison == "percent_of_S_as_KO") %>%
-  filter(!is.na(partner)) %>%
-  mutate(strain = case_when(strain == "E0224" ~ "uninf",
-                            strain == "E0224 F+" ~ "F128+",
-                            strain == "E0224 F+ M13+" ~ "F128+<br>M13+"),
-         strain = factor(strain, levels = c("uninf", "F128+", "F128+<br>M13+"))) %>%
-  mutate(partner = case_when(partner == "pps WT" ~ "∆*pps*",
-                             partner == "galK WT" ~ "∆*galK*"),
-         partner = factor(partner, levels = c("∆*pps*", "∆*galK*"))) %>%
-  ggplot(aes(x = strain, y = value, color = strain)) + 
-  stat_summary(aes(fill = strain), position = position_dodge(0.5), fun = mean, shape = '-', size = 5, color = 'black')+
+  dplyr::mutate(partner = factor(partner, levels = c("*S. enterica*", "*M. extorquens*"))) %>%
+  mutate(label = case_when(p.adj > 0.05 ~ "ns",
+                           p.adj < 0.05 & p.adj > 0.01 ~ "*",
+                           p.adj < 0.01 ~ "**")) %>%
+  ggplot(aes(x = parasite, y = log2fc, color = partner)) +
   geom_point(size = 2, stroke = 1.5) +
-  facet_wrap(~partner, ncol = 2, scales = "free_y") +
-  theme_bw(base_size = 16) +
-  ylab("mutant relative fitness") +
-  scale_color_manual(values = c("uninf" = "#F5793A", "F128+" = "#A95AA1", "F128+<br>M13+" = "#0F2080")) +
+  ylab("log2(fold-change) in lactate") +
+  geom_text(data = . %>% 
+        group_by(baseline, partner, parasite) %>% 
+        slice(1), aes(x = parasite, label = label, vjust = -1, color = "black", size = 5)) +
+  facet_wrap(~partner, scales = "free_x") +
+  geom_hline(yintercept = 0, color = "red", linetype = "dashed") +
+  stat_summary(aes(fill = partner), position = position_dodge(0.5), fun = mean, shape = '-', size = 5, color = 'black')+
+  scale_color_manual(values = c("*S. enterica*" = "#DDAA33", "*M. extorquens*" = "#BB5566")) +
+  theme_bw(base_size = 16)+
+  ylim(-12,2)+
   theme(axis.text = element_markdown(),
         legend.position = "none", strip.background = element_blank(), axis.title.x = element_blank(),
-        strip.text = element_markdown())
+        strip.text = element_markdown(), text = element_text(color = "black"))
 
-# part E - lactate supp
+# part D - lactate supp
 date <- "3May2024"
 no_infection = TRUE
 
 source(here::here("data-generation", "experimental", "clean-mutualism-tecan-data.R"))
 
-partE <- all_data_corrected %>% inner_join(., plate_layout %>% select(well, supplement), by = "well") %>%
+stats <- all_data_corrected %>% inner_join(., plate_layout %>% select(well, supplement), by = "well") %>%
+  rbind(., all_data %>% filter(strain == "M0104") %>% 
+          mutate(adjusted_CFP = 0, adjusted_YFP = 0, E_corrected_OD = 0, S_corrected_OD = 0) %>%
+          select(-c(temp, seconds))) %>%
+  mutate(M_corrected_OD = ifelse(partner %in% c("M0104", "S0240 + M0104"), abs(OD - E_corrected_OD - S_corrected_OD - 0.05), 0),
+         M_corrected_OD = ifelse(strain == "M0104", OD - 0.08, M_corrected_OD)) %>%
+  filter(!is.na(partner)) %>%
+  filter(partner != "JS002") %>%
+  group_by(well) %>% filter(OD == max(OD)) %>% slice_head() %>% ungroup() %>%
+  mutate(percent_M = case_when(partner == "M0104" ~ M_corrected_OD / (E_corrected_OD + M_corrected_OD),
+                               partner == "S0240" ~ NA,
+                               partner == "S0240 + M0104" ~ M_corrected_OD / (S_corrected_OD + E_corrected_OD + M_corrected_OD)),
+         percent_S = case_when(partner == "S0240" ~ S_corrected_OD / (E_corrected_OD + S_corrected_OD),
+                               partner == "M0104" ~ NA,
+                               partner == "S0240 + M0104" ~ S_corrected_OD / (S_corrected_OD + E_corrected_OD + M_corrected_OD))) %>%
+  select(partner, strain, supplement, percent_M, percent_S) %>%
+  mutate(strain = case_when(strain == "E0224" ~ "uninf",
+                            strain == "E0224 F+" ~ "F128+",
+                            strain == "E0224 F+ M13+" ~ "F128+<br>M13+"),
+         strain = factor(strain, levels = c("uninf", "F128+", "F128+<br>M13+"))) %>%
+  mutate(partner = case_when(partner == "S0240" ~ "*S. enterica*",
+                             partner == "M0104" ~ "*M. extorquens*",
+                             partner == "S0240 + M0104" ~ "*S. enterica*<br>+<br>*M. extorquens*"),
+         partner = factor(partner, levels = c("*S. enterica*", "*M. extorquens*", "*S. enterica*<br>+<br>*M. extorquens*"))) %>%
+  mutate(supplement = ifelse(is.na(supplement), "std", "lact+"),
+         supplement = factor(supplement, levels = c("std", "lact+"))) %>%
+  pivot_longer(percent_M:percent_S, names_to = "species") %>%
+  group_by(species, partner) %>%
+  drop_na() %>%
+  t_test(value ~ supplement) %>%
+  add_significance("p") %>%
+  add_xy_position(x = "supplement") %>%
+  mutate(label = paste0(scientific(p,digits = 2), " (", p.signif, ")"))
+
+partD <- all_data_corrected %>% inner_join(., plate_layout %>% select(well, supplement), by = "well") %>%
   rbind(., all_data %>% filter(strain == "M0104") %>% 
           mutate(adjusted_CFP = 0, adjusted_YFP = 0, E_corrected_OD = 0, S_corrected_OD = 0) %>%
           select(-c(temp, seconds))) %>%
@@ -338,18 +343,20 @@ partE <- all_data_corrected %>% inner_join(., plate_layout %>% select(well, supp
   geom_point(size = 2, stroke = 1.5) +
   facet_wrap(~partner, ncol = 3, scales = "free_y") +
   theme_bw(base_size = 16) +
-  ylab("% partner") +
+  ylab("percent partner") +
+  stat_pvalue_manual(stats, label = "label", tip.length = 0.0, size = 3) +
+  scale_y_continuous(expand = expansion(mult = c(0, 0.1))) +
   scale_color_manual(values = c("percent_S" = "#DDAA33", "percent_M" = "#BB5566")) +
   theme(axis.text = element_markdown(),
         legend.position = "none", strip.background = element_blank(), axis.title.x = element_blank(),
         strip.text = element_markdown())
 
 # final figure
-top <- plot_grid(partA, partB, ncol = 2, rel_widths = c(0.7,1), label_size = 26, labels = c("A", "B"))
-bottom <- plot_grid(partC, partD, partE, ncol = 3, rel_widths = c(0.5,0.85,1), label_size = 26, labels = c("C", "D", "E"))
-figure4 <- plot_grid(top, bottom, ncol = 1, rel_heights = c(1,0.7))
+top <- plot_grid(partA, partB, ncol = 2, rel_widths = c(0.85,1), label_size = 26, labels = c("A", "B"))
+bottom <- plot_grid(partC, partD, ncol = 2, rel_widths = c(0.7, 1), label_size = 26, labels = c("C", "D"))
+figure4 <- plot_grid(top, bottom, ncol = 1, rel_heights = c(1,0.85))
 
-png(here::here("figures", "final-figs", "imgs", "figure-4.png"), res = 300, width = 4000, height = 2500)
+png(here::here("figures", "final-figs", "imgs", "figure-4.png"), res = 300, width = 3200, height = 2400)
 figure4
 dev.off()
 

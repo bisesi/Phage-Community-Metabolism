@@ -5,21 +5,17 @@
 # load packages
 library("tidyverse")
 library("readxl")
-library("patchwork")
 library("ggtext")
-library("ggpubr")
 library("cowplot")
-library("broom")
-library("BBmisc")
+library("ggpubr")
+library("rstatix")
+library("scales")
 
 #load functions
 source(here::here("functions", "tecan-data-helper-functions.R"))
 source(here::here("functions", "baranyi-helper-functions.R"))
 
 # part A - O and F fac/coop/comp
-# competition - all comparisons significant except pOX M13 and uninf, F128 and F128 M13, and pOX and M13F128
-# facilitation - all comparisons significant except pOX to uninf and pOX M13 to F128
-# mutualism - all comparisons significant except pOX to uninf
 dates <- c("29July2024", "31July2024", "14August2024")
 has_interactions <- FALSE
 
@@ -200,6 +196,50 @@ for (i in 1:length(subsetted)){
     }
 }
 
+cfus16 <- load_pfu_data(here::here("experimental-data", "tecan-data","plasmid", "16September2024", "cfu_16September2024.xlsx")) %>%
+  filter(!is.na(cfu)) %>% filter(is.na(plate)) %>% dplyr::select(well, cfu) %>% mutate(date = "16September2024") %>%
+  pivot_wider(names_from = well, values_from = cfu) %>%
+  mutate(F_to_S = S0240 / (`E0224 F+` + S0240),
+         O_to_S = S0240 / (`E0224 O+` + S0240),
+         OM_to_S = S0240 / (`E0224 O+ M13+` + S0240)) %>%
+  dplyr::select(date, F_to_S, O_to_S, OM_to_S) %>%
+  pivot_longer(cols = c(F_to_S:OM_to_S)) %>%
+  mutate(name = case_when(name == "F_to_S" ~ "E0224 F+",
+                          name == "O_to_S" ~ "E0224 O+",
+                          name == "OM_to_S" ~ "E0224 O+ M13+")) %>% rename(starting_percent_S = value, strain = name)
+
+cfus18 <- load_pfu_data(here::here("experimental-data", "tecan-data","plasmid", "18September2024", "cfu_18September2024.xlsx")) %>%
+  filter(!is.na(cfu)) %>% filter(is.na(plate)) %>% dplyr::select(well, cfu) %>% mutate(date = "18September2024") %>%
+  pivot_wider(names_from = well, values_from = cfu) %>%
+  mutate(E_to_S = S0240 / (E0224 + S0240),
+        F_to_S = S0240 / (`E0224 F+` + S0240),
+        FM_to_S = S0240 / (`E0224 F+ M13+` + S0240),
+         O_to_S = S0240 / (`E0224 O+` + S0240),
+         OM_to_S = S0240 / (`E0224 O+ M13+` + S0240)) %>%
+  dplyr::select(date, F_to_S, O_to_S, OM_to_S, E_to_S, FM_to_S) %>%
+  pivot_longer(cols = c(F_to_S:FM_to_S)) %>%
+  mutate(name = case_when(name == "F_to_S" ~ "E0224 F+",
+                          name == "E_to_S" ~ "E0224",
+                          name == "FM_to_S" ~ "E0224 F+ M13+",
+                          name == "O_to_S" ~ "E0224 O+",
+                          name == "OM_to_S" ~ "E0224 O+ M13+")) %>% rename(starting_percent_S = value, strain = name)
+
+cfus21 <- load_pfu_data(here::here("experimental-data", "tecan-data","plasmid", "21September2024", "cfu_21September2024.xlsx")) %>%
+  filter(!is.na(cfu)) %>% filter(is.na(plate)) %>% dplyr::select(well, cfu) %>% mutate(date = "21September2024") %>%
+  pivot_wider(names_from = well, values_from = cfu) %>%
+  mutate(E_to_S = S0240 / (E0224 + S0240),
+         F_to_S = S0240 / (`E0224 F+` + S0240),
+         FM_to_S = S0240 / (`E0224 F+ M13+` + S0240),
+         O_to_S = S0240 / (`E0224 O+` + S0240),
+         OM_to_S = S0240 / (`E0224 O+ M13+` + S0240)) %>%
+  dplyr::select(date, F_to_S, O_to_S, OM_to_S, E_to_S, FM_to_S) %>%
+  pivot_longer(cols = c(F_to_S:FM_to_S)) %>%
+  mutate(name = case_when(name == "F_to_S" ~ "E0224 F+",
+                          name == "E_to_S" ~ "E0224",
+                          name == "FM_to_S" ~ "E0224 F+ M13+",
+                          name == "O_to_S" ~ "E0224 O+",
+                          name == "OM_to_S" ~ "E0224 O+ M13+")) %>% rename(starting_percent_S = value, strain = name)
+
 all_interactions <- all_plate_data_corrected %>% group_by(well) %>% filter(OD == max(OD)) %>% ungroup() %>% mutate(percent_S = S_corrected_OD / (S_corrected_OD + E_corrected_OD)) %>% 
   dplyr::select(well, strain, partner, percent_S) %>% inner_join(., all_dates %>% dplyr::select(well, interaction, partner, strain, date) %>% unique, by = c("well", "partner", "strain")) %>%
   dplyr::select(-c(well)) %>%
@@ -207,8 +247,30 @@ all_interactions <- all_plate_data_corrected %>% group_by(well) %>% filter(OD ==
           mutate(interaction = "mutualism") %>% dplyr::select(-c(percent_E))) %>%
   rbind(., facilitation_only)
 
+competition <- all_interactions %>% filter(interaction == "competition") %>%
+  inner_join(., rbind(cfus18, cfus16, cfus21), by = c("strain", "date"))
+
+
+# part A mutualism
+stats <- all_interactions %>%
+  filter(!is.na(interaction)) %>%
+  filter(interaction == "mutualism") %>%
+  mutate(strain = case_when(strain %in% c("E0224 F+") ~ "F128+",
+                            strain %in% c("E0224 F+ M13+") ~ "F128+<br>M13+",
+                            strain %in% c("E0224") ~ "uninf",
+                            strain %in% c("E0224 O+") ~ "pOX38+",
+                            strain %in% c("E0224 O+ M13+") ~ "pOX38+<br>M13+"),
+         strain = factor(strain, levels = c("uninf", "F128+", "F128+<br>M13+", "pOX38+", "pOX38+<br>M13+"))) %>%
+  t_test(percent_S ~ strain, ref.group = "uninf") %>%
+  adjust_pvalue(method = "BH") %>%
+  add_significance("p.adj") %>%
+  add_xy_position(x = "strain") %>%
+  mutate(label = paste0(scientific(p.adj,digits = 2), " (", p.adj.signif, ")"))
+
 partA <- all_interactions %>%
   filter(!is.na(interaction)) %>%
+  filter(interaction == "mutualism") %>%
+  mutate(interaction = "mutualism with *∆metB*") %>%
   mutate(strain = case_when(strain %in% c("E0224 F+") ~ "F128+",
                             strain %in% c("E0224 F+ M13+") ~ "F128+<br>M13+",
                             strain %in% c("E0224") ~ "uninf",
@@ -216,17 +278,62 @@ partA <- all_interactions %>%
                             strain %in% c("E0224 O+ M13+") ~ "pOX38+<br>M13+"),
          strain = factor(strain, levels = c("uninf", "F128+", "F128+<br>M13+", "pOX38+", "pOX38+<br>M13+"))) %>%
   ggplot(aes(x = strain, y = percent_S, color = strain)) +
-  facet_wrap(~interaction, scales = "free") +
   stat_summary(aes(fill = strain), fun = mean, shape = '-', size = 5, color = 'black')+
   geom_point(size = 2, stroke = 1.5)+
   ylab("percent *S. enterica*") +
   theme_bw(base_size = 16)+
-  scale_color_manual(values = c("uninf" = "#F5793A", "F128+" = "#A95AA1", "pOX38+" = "#A95AA1", "F128+<br>M13+" = "#0F2080", "pOX38+<br>M13+" = "#0F2080")) +
+  facet_wrap(~interaction) +
+  geom_hline(yintercept = 0.225, color = "red", linetype = "dashed") +
+  stat_pvalue_manual(stats, label = "label", tip.length = 0.0, size = 3) +
+  scale_y_continuous(expand = expansion(mult = c(0, 0.1))) +
+  scale_color_manual(values = c("uninf" = "black", "F128+" = "#117733", "F128+<br>M13+" = "#88CCEE", "pOX38+" = "#117733", "pOX38+<br>M13+" = "#88CCEE")) +
+  theme(axis.text = element_markdown(), axis.title.x = element_blank(),
+        legend.position = "none", strip.background = element_blank(), strip.text = element_markdown(),
+        axis.title.y = element_markdown(),
+        axis.text.x = element_text(angle = 90, hjust = 0.5, vjust = 0.5))
+
+# part B facilitation
+stats <- all_interactions %>%
+  filter(!is.na(interaction)) %>%
+  filter(interaction == "facilitation") %>%
+  mutate(strain = case_when(strain %in% c("E0224 F+") ~ "F128+",
+                            strain %in% c("E0224 F+ M13+") ~ "F128+<br>M13+",
+                            strain %in% c("E0224") ~ "uninf",
+                            strain %in% c("E0224 O+") ~ "pOX38+",
+                            strain %in% c("E0224 O+ M13+") ~ "pOX38+<br>M13+"),
+         strain = factor(strain, levels = c("uninf", "F128+", "F128+<br>M13+", "pOX38+", "pOX38+<br>M13+"))) %>%
+  t_test(percent_S ~ strain, ref.group = "uninf") %>%
+  adjust_pvalue(method = "BH") %>%
+  add_significance("p.adj") %>%
+  add_xy_position(x = "strain") %>%
+  mutate(label = paste0(scientific(p.adj,digits = 2), " (", p.adj.signif, ")"))
+
+partB <- all_interactions %>%
+  filter(!is.na(interaction)) %>%
+  filter(interaction == "facilitation") %>%
+  mutate(interaction = "facilitation with *∆metB*") %>%
+  mutate(strain = case_when(strain %in% c("E0224 F+") ~ "F128+",
+                            strain %in% c("E0224 F+ M13+") ~ "F128+<br>M13+",
+                            strain %in% c("E0224") ~ "uninf",
+                            strain %in% c("E0224 O+") ~ "pOX38+",
+                            strain %in% c("E0224 O+ M13+") ~ "pOX38+<br>M13+"),
+         strain = factor(strain, levels = c("uninf", "F128+", "F128+<br>M13+", "pOX38+", "pOX38+<br>M13+"))) %>%
+  ggplot(aes(x = strain, y = percent_S, color = strain)) +
+  stat_summary(aes(fill = strain), fun = mean, shape = '-', size = 5, color = 'black')+
+  geom_point(size = 2, stroke = 1.5)+
+  ylab("percent *S. enterica*") +
+  theme_bw(base_size = 16)+
+  facet_wrap(~interaction) +
+  geom_hline(yintercept = 0.103, color = "red", linetype = "dashed") +
+  stat_pvalue_manual(stats, label = "label", tip.length = 0.0, size = 3) +
+  scale_y_continuous(expand = expansion(mult = c(0, 0.1))) +
+  scale_color_manual(values = c("uninf" = "black", "F128+" = "#117733", "F128+<br>M13+" = "#88CCEE", "pOX38+" = "#117733", "pOX38+<br>M13+" = "#88CCEE")) +
   theme(axis.text = element_markdown(), axis.title.x = element_blank(),
         legend.position = "none", strip.background = element_blank(),
-        axis.title.y = element_markdown())
+        axis.title.y = element_markdown(), strip.text = element_markdown(),
+        axis.text.x = element_text(angle = 90, hjust = 0.5, vjust = 0.5))
 
-# part B - MG1655
+# part C - MG1655
 # only F128 M13 to uninf is significant
 date <- "21May2024"
 may21 <- load_pfu_data(here::here("experimental-data", "non-tecan-plates","facilitation", date, "cfu_21May2024.xlsx")) %>%
@@ -238,11 +345,26 @@ may20 <- load_pfu_data(here::here("experimental-data", "non-tecan-plates","facil
   filter(!is.na(cfu)) %>% inner_join(., read_csv(here::here("experimental-data", "non-tecan-plates", "facilitation", date, "plate_layout.csv")) %>%
                                        janitor::clean_names(), by = "well") %>% filter(partner == "S0240") %>% select(cfu, well, plate, strain, partner) %>% mutate(date = date)
 
-partB <- rbind(may21, may20) %>% 
+stats <- rbind(may21, may20) %>% 
   mutate(strain = ifelse(strain == "MG1655 WT", "MG1655", strain)) %>%
   mutate(strain = ifelse(strain == "MG1655 WT F+", "MG1655 F+", strain)) %>%
   mutate(strain = ifelse(strain == "MG1655 WT F+ M13+", "MG1655 F+ M13+", strain)) %>%
   filter(grepl("old", strain) == FALSE) %>%
+  pivot_wider(names_from = "plate", values_from = "cfu") %>% mutate(percent_S = S / (E + S)) %>% 
+  mutate(strain = case_when(strain == "MG1655" ~ "uninf",
+                            strain == "MG1655 F+" ~ "F128+",
+                            strain == "MG1655 F+ M13+" ~ "F128+<br>M13+"),
+         strain = factor(strain, levels = c("uninf", "F128+", "F128+<br>M13+"))) %>%
+  tukey_hsd(percent_S ~ strain) %>%
+  add_xy_position(x = "strain") %>%
+  mutate(label = paste0(scientific(p.adj,digits = 2), " (", p.adj.signif, ")"))
+
+partC <- rbind(may21, may20) %>% 
+  mutate(strain = ifelse(strain == "MG1655 WT", "MG1655", strain)) %>%
+  mutate(strain = ifelse(strain == "MG1655 WT F+", "MG1655 F+", strain)) %>%
+  mutate(strain = ifelse(strain == "MG1655 WT F+ M13+", "MG1655 F+ M13+", strain)) %>%
+  filter(grepl("old", strain) == FALSE) %>%
+  mutate(interaction = "facilitation with MG1655") %>%
   pivot_wider(names_from = "plate", values_from = "cfu") %>% mutate(percent_S = S / (E + S)) %>% 
   mutate(strain = case_when(strain == "MG1655" ~ "uninf",
                             strain == "MG1655 F+" ~ "F128+",
@@ -253,48 +375,15 @@ partB <- rbind(may21, may20) %>%
   geom_point(size = 2, stroke = 1.5)+
   ylab("percent *S. enterica*") +
   theme_bw(base_size = 16)+
-  scale_color_manual(values = c("uninf" = "#F5793A", "F128+" = "#A95AA1", "F128+<br>M13+" = "#0F2080")) +
-  theme(axis.text = element_markdown(), axis.title.x = element_blank(),
+  facet_wrap(~interaction) +
+  stat_pvalue_manual(stats, label = "label", tip.length = 0.0, size = 3) +
+  scale_y_continuous(expand = expansion(mult = c(0, 0.1))) +
+  scale_color_manual(values = c("uninf" = "black", "F128+" = "#117733", "F128+<br>M13+" = "#88CCEE")) +
+  theme(axis.text = element_markdown(), axis.title.x = element_blank(), strip.text = element_markdown(),
                                    legend.position = "none", strip.background = element_blank(),
                                    axis.title.y = element_markdown())
 
-# part C - biomass-normalized lactate promega
-# only pOX M13 to uninf significant for metB
-# none significant for MG1655
-promega <- read_csv(here::here("experimental-data", "hplc", "4October2024", "lactate_kit.csv"))
-for_model <- promega %>% filter(type == "standard") %>% dplyr::select(condition, LU_avg)
-for_model$condition <- as.numeric(for_model$condition)
-for_model <- for_model %>% filter(condition < 5)
-
-tested_conditions <- promega %>% filter(type != "standard") %>% group_by(condition, bio_rep, midlog_biomass) %>%
-  summarize(LU_avg = mean(LU_avg)) %>% ungroup()
-
-linear_model <- lm(condition ~ LU_avg, data = for_model)
-
-tested_conditions$prediction <- predict(linear_model, newdata = data.frame(tested_conditions %>% dplyr::select(LU_avg)))
-
-unused <- tested_conditions %>% mutate(conc_per_cell = prediction / midlog_biomass) %>%
-  mutate(conc_per_cell = ifelse(conc_per_cell < 0, 0, conc_per_cell)) %>%
-  mutate(background = case_when(grepl("MG1655", condition) ~ "MG1655",
-                                grepl("E0224", condition) ~ "*∆metB*"),
-         parasite = case_when(condition %in% c("MG1655", "E0224") ~ "uninf",
-                              condition %in% c("MG1655 F+", "E0224 F+") ~ "F128+",
-                              condition %in% c("MG1655 F+ M13+", "E0224 F+ M13+") ~ "F128+<br>M13+",
-                              condition %in% c("E0224 O+") ~ "pOX38+",
-                              condition %in% c("E0224 O+ M13+") ~ "pOX38+<br>M13+"),
-         parasite = factor(parasite, levels = c("uninf", "F128+", "F128+<br>M13+", "pOX38+", "pOX38+<br>M13+"))) %>%
-  ggplot(aes(x = parasite, y = conc_per_cell, color = parasite)) +
-  stat_summary(aes(fill = parasite), fun = mean, shape = '-', size = 5, color = 'black')+
-  geom_point(size = 2, stroke = 1.5)+
-  theme_bw(base_size = 16)+
-  ylab("[lactate] per cell") +
-  facet_wrap(~background, scales = "free") +
-  scale_color_manual(values = c("uninf" = "#F5793A", "F128+" = "#A95AA1", "F128+<br>M13+" = "#0F2080", "pOX38+" = "#A95AA1", "pOX38+<br>M13+" = "#0F2080")) +
-  theme(axis.text = element_markdown(), axis.title.x = element_blank(),
-        legend.position = "none", strip.background = element_blank(),
-        axis.title.y = element_markdown(), strip.text = element_markdown())
-
-# part C - plasmid retention rates
+# part D - plasmid retention rates
 # only pOX M13 to F128, pOX to F128M13 and pOXM13 to pOX significant
 dates <- c("29July2024", "31July2024", "14August2024")
 
@@ -312,27 +401,47 @@ for (date in dates){
   plasmid_loss <- rbind(plasmid_loss, temp2)
 }
 
-partC <- plasmid_loss %>% filter(strain %in% c("E0224", "E0224 F+", "E0224 F+ M13+", "E0224 O+", "E0224 O+ M13+")) %>%
+stats <- plasmid_loss %>% filter(strain %in% c("E0224", "E0224 F+", "E0224 F+ M13+", "E0224 O+", "E0224 O+ M13+")) %>%
   mutate(strain = case_when(strain == "E0224" ~ "uninf",
                             strain == "E0224 F+" ~ "F128+",
                             strain == "E0224 F+ M13+" ~ "F128+<br>M13+",
                             strain == "E0224 O+ M13+" ~ "pOX38+<br>M13+",
                             strain == "E0224 O+" ~ "pOX38+")) %>%
   filter(partner == "S0240") %>% filter(!well %in% c("E3", "E4")) %>%
-  ggplot(aes(x = fct_reorder(strain, percent_retained, .desc = TRUE), y = percent_retained, color = strain)) +
+  tukey_hsd(percent_retained ~ strain) %>%
+  add_xy_position(x = "strain") %>%
+  mutate(label = paste0(scientific(p.adj,digits = 2), " (", p.adj.signif, ")")) %>%
+  filter((group1 == "F128+" & group2 == "F128+<br>M13+") | (group1 == "F128+" & group2 == "pOX38+") |
+           (group1 == "pOX38+" & group2 == "pOX38+<br>M13+") | (group1 == "F128+<br>M13+" & group2 == "pOX38+<br>M13+"))
+
+partD <- plasmid_loss %>% filter(strain %in% c("E0224", "E0224 F+", "E0224 F+ M13+", "E0224 O+", "E0224 O+ M13+")) %>%
+  mutate(strain = case_when(strain == "E0224" ~ "uninf",
+                            strain == "E0224 F+" ~ "F128+",
+                            strain == "E0224 F+ M13+" ~ "F128+<br>M13+",
+                            strain == "E0224 O+ M13+" ~ "pOX38+<br>M13+",
+                            strain == "E0224 O+" ~ "pOX38+")) %>%
+  filter(partner == "S0240") %>% filter(!well %in% c("E3", "E4")) %>%
+  mutate(interaction = "*∆metB* co-culture plasmid retention") %>%
+  ggplot(aes(x = strain, y = percent_retained, color = strain)) +
   stat_summary(aes(fill = strain), fun = mean, shape = '-', size = 5, color = 'black')+
   geom_point(size = 2, stroke = 1.5)+
   ylab("percent plasmid +") +
   theme_bw(base_size = 16)+
-  scale_color_manual(values = c("uninf" = "#F5793A", "F128+" = "#A95AA1", "F128+<br>M13+" = "#0F2080", "pOX38+" = "#A95AA1", "pOX38+<br>M13+" = "#0F2080")) +
+  facet_wrap(~interaction) +
+  stat_pvalue_manual(stats, label = "label", tip.length = 0.0, size = 3) +
+  scale_y_continuous(expand = expansion(mult = c(0, 0.1))) +
+  scale_color_manual(values = c("uninf" = "black", "F128+" = "#117733", "F128+<br>M13+" = "#88CCEE", "pOX38+" = "#117733", "pOX38+<br>M13+" = "#88CCEE")) +
   theme(axis.text = element_markdown(), axis.title.x = element_blank(),
         legend.position = "none", strip.background = element_blank(),
-        axis.title.y = element_markdown())
+        axis.title.y = element_markdown(), strip.text = element_markdown(),
+        axis.text.x = element_text(angle = 90, hjust = 0.5, vjust = 0.5))
 
 # final figure
-figure5 <- plot_grid(partA, plot_grid(partB, partC, ncol = 2, label_size = 26, labels = c("B", "C")), label_size = 26, labels = c("A", ""), ncol = 1)
-
-png(here::here("figures", "final-figs", "imgs", "figure-5.png"), res = 300, width = 4000, height = 2000)
+top <- plot_grid(partA, partB, ncol = 2, label_size = 26, labels = c("A", "B"))
+bottom <- plot_grid(partC, partD, ncol = 2, label_size = 26, labels = c("C", "D"))
+figure5 <- plot_grid(top, bottom, ncol = 1)
+                    
+png(here::here("figures", "final-figs", "imgs", "figure-5.png"), res = 300, width = 2400, height = 2100)
 figure5
 dev.off()
 

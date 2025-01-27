@@ -37,27 +37,27 @@ all_data <- OD %>%
   inner_join(., RFP %>% select(cycle, well, RFP), by = c("well", "cycle")) %>%
   inner_join(., YFP %>% select(cycle, well, YFP), by = c("well", "cycle")) %>%
   inner_join(., plate_layout, by = "well") %>%
-  filter(strain != "none") %>%
-  mutate(partner = ifelse(partner == "none", NA, partner)) 
+  dplyr::filter(strain != "none") %>%
+  dplyr::mutate(partner = ifelse(partner == "none", NA, partner)) 
 
 #OD traces
 uninfected <- all_data %>%
-  filter(strain %in% c("E0224", "S0240")) %>%
-  mutate(phage = "none", 
+  dplyr::filter(strain %in% c("E0224", "S0240")) %>%
+  dplyr::mutate(phage = "none", 
          interaction = case_when(strain == "E0224" & is.na(partner) ~ "Emono",
                                  strain == "S0240" ~ "Smono",
                                  TRUE ~ strain)) 
 
 fplasmid <- all_data %>%
-  filter(strain %in% c("E0224 F+", "S0240")) %>%
-  mutate(phage = "none", 
+  dplyr::filter(strain %in% c("E0224 F+", "S0240")) %>%
+  dplyr::mutate(phage = "none", 
          interaction = case_when(strain == "E0224 F+" & is.na(partner) ~ "Emono",
                                  strain == "S0240" ~ "Smono",
                                  TRUE ~ strain)) 
 
 infected <- all_data %>%
-  filter(strain %in% c("E0224 F+ M13+", "S0240")) %>%
-  mutate(phage = "none", 
+  dplyr::filter(strain %in% c("E0224 F+ M13+", "S0240")) %>%
+  dplyr::mutate(phage = "none", 
          interaction = case_when(strain == "E0224 F+ M13+" & is.na(partner) ~ "Emono",
                                  strain == "S0240" ~ "Smono",
                                  TRUE ~ strain)) 
@@ -72,8 +72,8 @@ for (i in 1:length(subsetted)){
   CFP_bleed <- subsetted[[i]] %>% adjust_FP_vs_FP("Smono", CFP, YFP, subsetted[[i]] %>% adjust_OD_vs_FP("Smono", YFP) %>% first())
   all_tecan_adjusted_FP <- adjust_FP_values(subsetted[[i]], YFP_bleed_value = YFP_bleed, CFP_bleed_value = CFP_bleed)
   all_tecan_adjusted_OD <- all_tecan_adjusted_FP %>%
-    mutate(E_corrected_OD = adjusted_CFP * subsetted[[i]] %>% adjust_OD_vs_FP("Emono", CFP) %>% last()) %>%
-    mutate(S_corrected_OD = adjusted_YFP * subsetted[[i]] %>% adjust_OD_vs_FP("Smono", YFP) %>% last()) %>%
-    inner_join(., subsetted[[i]] %>% select(cycle, well, OD, hour, JFP, RFP, CFP, YFP, strain, partner), by = c("well", "cycle"))
+    dplyr::mutate(E_corrected_OD = adjusted_CFP * subsetted[[i]] %>% adjust_OD_vs_FP("Emono", CFP) %>% last()) %>%
+    dplyr::mutate(S_corrected_OD = adjusted_YFP * subsetted[[i]] %>% adjust_OD_vs_FP("Smono", YFP) %>% last()) %>%
+    inner_join(., subsetted[[i]] %>% select(cycle, well, OD, hour, JFP,RFP, CFP, YFP, strain, partner), by = c("well", "cycle"))
   all_data_corrected <- rbind(all_data_corrected, all_tecan_adjusted_OD)
 }

@@ -13,18 +13,18 @@ import_tecan_data <- function(path, file_type = "OD"){
   names(data)[1:3] = c("cycle","seconds","temp")
   data <- data %>%
     gather(well, OD, -cycle, -seconds, -temp) %>%
-    mutate(hour = seconds / 60 / 60)
+    dplyr::mutate(hour = seconds / 60 / 60)
   if (file_type == "CFP"){
-    data <- data %>% rename(CFP = OD)
+    data <- data %>% dplyr::rename(CFP = OD)
   }
   if (file_type == "YFP"){
-    data <- data %>% rename(YFP = OD)
+    data <- data %>% dplyr::rename(YFP = OD)
   }
   if (file_type == "RFP"){
-    data <- data %>% rename(RFP = OD)
+    data <- data %>% dplyr::rename(RFP = OD)
   }
   if (file_type == "JFP"){
-    data <- data %>% rename(JFP = OD)
+    data <- data %>% dplyr::rename(JFP = OD)
   }
   return(data)
 }
@@ -47,34 +47,34 @@ generate_baranyi_growth_data_from_CFP <- function(file){
 
 adjust_OD_vs_FP <- function(input, itx, fluorescence){
   output <- input %>% 
-    filter(interaction == itx & phage == "none") %>% 
+    dplyr::filter(interaction == itx & phage == "none") %>% 
     group_by(well) %>% 
-    mutate(adjusted = {{fluorescence}} - min({{fluorescence}})) %>% 
+    dplyr::mutate(adjusted = {{fluorescence}} - min({{fluorescence}})) %>% 
     ungroup() %>% 
     dplyr::select(c(cycle, well, adjusted, OD))
   cycle_max <- input %>% dplyr::select(cycle) %>% max()
   best_fit <- c()
   for (i in seq(5, cycle_max, by = 5)){
-    best_fit[i] <- summary(lm(OD ~ adjusted, data = output %>% filter(cycle < i)))$r.squared
+    best_fit[i] <- summary(lm(OD ~ adjusted, data = output %>% dplyr::filter(cycle < i)))$r.squared
   }
   return(c(which.max(best_fit), summary(lm(OD ~ adjusted, data = output))$coefficients[2,1]))
 }
 
 adjust_FP_vs_FP <- function(input, itx, fluorescence1, fluorescence2, cycle_number){
  output <- input %>% 
-    filter(interaction == itx & phage == "none") %>% 
+    dplyr::filter(interaction == itx & phage == "none") %>% 
     group_by(well) %>% 
-    mutate(adjusted1 = {{fluorescence1}} - min({{fluorescence1}})) %>%
+    dplyr::mutate(adjusted1 = {{fluorescence1}} - min({{fluorescence1}})) %>%
     ungroup() %>% 
-    mutate(adjusted2 = {{fluorescence2}} - min({{fluorescence2}})) %>%
+    dplyr::mutate(adjusted2 = {{fluorescence2}} - min({{fluorescence2}})) %>%
     ungroup() %>% 
     dplyr::select(c(cycle, well, adjusted1, adjusted2)) %>%
-    filter(cycle < cycle_number)
+    dplyr::filter(cycle < cycle_number)
   return(summary(lm(adjusted1 ~ adjusted2, data = output))$coefficients[2,1])
 }
 
 adjust_FP_values <- function(input, YFP_bleed_value, CFP_bleed_value){
-  wells <- c(input %>% filter(interaction != "none") %>% dplyr::select(well) %>% unique())$well
+  wells <- c(input %>% dplyr::filter(interaction != "none") %>% dplyr::select(well) %>% unique())$well
   total_data <- input %>% dplyr::select(c(cycle,well,YFP,CFP)) %>% pivot_wider(names_from = well, values_from = c("CFP","YFP"))
   store <- list()
   for (i in wells){
@@ -105,25 +105,25 @@ clean_pfu_data <- function(input){
   wide_data <- input %>% 
     dplyr::select(condition, interaction, phage, plate, pfu, well) %>%
     pivot_wider(names_from = plate, values_from = pfu) %>%
-    rename(pfu_S = S, pfu_E = E)
+    dplyr::rename(pfu_S = S, pfu_E = E)
   starting_phage <- wide_data %>%
-    filter(interaction == "None" & condition == "Start") %>%
-    mutate(ratio = pfu_E / (pfu_E + pfu_S)) 
+    dplyr::filter(interaction == "None" & condition == "Start") %>%
+    dplyr::mutate(ratio = pfu_E / (pfu_E + pfu_S)) 
   output <- wide_data %>%
-    filter(condition != "Start") %>%
-    mutate(phi_doublings = case_when(phage == "Phi" ~ log(pfu_E / starting_phage %>% filter(phage == "Phi") %>% dplyr::select(pfu_E) %>% pull),
+    dplyr::filter(condition != "Start") %>%
+    dplyr::mutate(phi_doublings = case_when(phage == "Phi" ~ log(pfu_E / starting_phage %>% filter(phage == "Phi") %>% dplyr::select(pfu_E) %>% pull),
                                      phage == "Phi + P22" ~ log(pfu_E / starting_phage %>% filter(phage == "Phi + P22") %>% dplyr::select(pfu_E) %>% pull),
                                      phage == "P22" ~ 0,
                                      TRUE ~ 0)) %>%    
-    mutate(p22_doublings = case_when(phage == "P22" ~ log(pfu_S / starting_phage %>% filter(phage == "P22") %>% dplyr::select(pfu_S) %>% pull),
+    dplyr::mutate(p22_doublings = case_when(phage == "P22" ~ log(pfu_S / starting_phage %>% filter(phage == "P22") %>% dplyr::select(pfu_S) %>% pull),
                                      phage == "Phi + P22" ~ log(pfu_S / starting_phage %>% filter(phage == "Phi + P22") %>% dplyr::select(pfu_S) %>% pull),
                                      phage == "Phi" ~ 0,
                                      TRUE ~ 0)) %>%
-    mutate(generalist_fitness = (((pfu_E) / (pfu_E + pfu_S)) / starting_phage %>% filter(phage == "Phi + P22") %>% dplyr::select(ratio) %>% pull)) %>% 
-    mutate(change_in_percent_generalist = (((pfu_E) / (pfu_E + pfu_S)) - starting_phage %>% filter(phage == "Phi + P22") %>% dplyr::select(ratio) %>% pull)) %>%
-    mutate_all(~replace(., is.nan(.), 0)) %>%
-    mutate_all(~replace(., is.infinite(.), log(1 / starting_phage %>% filter(phage == "Phi + P22") %>% dplyr::select(pfu_E) %>% pull))) %>%
-    mutate(interaction = case_when(interaction == "Smono" ~ "S Monoculture",
+    dplyr::mutate(generalist_fitness = (((pfu_E) / (pfu_E + pfu_S)) / starting_phage %>% filter(phage == "Phi + P22") %>% dplyr::select(ratio) %>% pull)) %>% 
+    dplyr::mutate(change_in_percent_generalist = (((pfu_E) / (pfu_E + pfu_S)) - starting_phage %>% filter(phage == "Phi + P22") %>% dplyr::select(ratio) %>% pull)) %>%
+    dplyr::mutate_all(~replace(., is.nan(.), 0)) %>%
+    dplyr::mutate_all(~replace(., is.infinite(.), log(1 / starting_phage %>% filter(phage == "Phi + P22") %>% dplyr::select(pfu_E) %>% pull))) %>%
+    dplyr::mutate(interaction = case_when(interaction == "Smono" ~ "S Monoculture",
                                    interaction == "Emono" ~ "E Monoculture",
                                    interaction == "E Fac" ~ "E Facilitation",
                                    interaction == "Coop" ~ "Mutualism",
@@ -133,10 +133,10 @@ clean_pfu_data <- function(input){
     pivot_longer(cols = ends_with("doublings"),
                  names_to = "doubling_type",
                  values_to = "doublings") %>%
-    mutate(phage_type = case_when(doubling_type == "p22_doublings" ~ "Specialist phage",
+    dplyr::mutate(phage_type = case_when(doubling_type == "p22_doublings" ~ "Specialist phage",
                                   doubling_type == "phi_doublings" ~ "Generalist phage",
                                   TRUE ~ "NA")) %>%
-    mutate(phage_interaction = case_when(phage == "P22" ~ "Specialist phage",
+    dplyr::mutate(phage_interaction = case_when(phage == "P22" ~ "Specialist phage",
                              phage == "Phi" ~ "Generalist phage",
                              phage == "Phi + P22" ~ "Phage Competition"))
   return(output)
@@ -149,12 +149,12 @@ adjust_curves_by_CFU <- function(data, model_frame, model) {
   predictions <- data %>% 
     inner_join(., nested_data, by = c("well", "strain")) %>% 
     inner_join(., model_frame %>% select(strain, {{model}}), by = c("strain")) %>% 
-    mutate(model_pred = map2({{model}}, data, predict))
+    dplyr::mutate(model_pred = map2({{model}}, data, predict))
   
   output <- predictions %>% 
     dplyr::select(strain, well, data, model_pred) %>% 
     unnest(cols = c(data, model_pred)) %>% 
-    rename(prediction = model_pred)
+    dplyr::rename(prediction = model_pred)
   
   return(output)
 }
@@ -173,7 +173,7 @@ import_spent_media <- function(date, replicate, path_extension){
     filter(media %in% c("E0224", "E0224 F+", "E0224 F+ M13+")) %>%
     filter(cycle == min(cycle)) %>%
     dplyr::select(CFP, media) %>%
-    mutate(replicate = replicate)
+    dplyr::mutate(replicate = replicate)
   
   return(average_cfp)
 }

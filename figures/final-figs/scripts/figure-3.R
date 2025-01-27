@@ -5,15 +5,15 @@
 # load packages
 library("tidyverse")
 library("readxl")
-library("patchwork")
 library("ggtext")
 library("ggpubr")
 library("cowplot")
-library("chromatographR")
-library("broom")
-library("ggVennDiagram")
-library("ggfortify")
-library("ggpubfigs")
+library("rstatix")
+library("scales")
+
+#load functions
+source(here::here("functions", "tecan-data-helper-functions.R"))
+source(here::here("functions", "baranyi-helper-functions.R"))
 
 # part A - community composition
 date <- "6November2023"
@@ -92,7 +92,34 @@ nov20 <- all_data_corrected %>%
                              species == "M_corrected_OD" ~ "*M. extorquens*")) %>%
   mutate(date = date)
 
-partB <- nov6 %>% filter(well != "G8") %>% rbind(., nov20) %>% filter(!strain %in% c("S0240", "M0104")) %>% filter(is.na(partner) | partner != "JS002") %>%
+stats <- nov6 %>% filter(well != "G8") %>% rbind(., nov20) %>% filter(!strain %in% c("S0240", "M0104")) %>% 
+  filter(is.na(partner) | partner != "JS002") %>%
+  group_by(well, date) %>% filter(OD == max(OD)) %>% slice_head(n = 3) %>% ungroup() %>%
+  mutate(value = case_when(is.na(partner) & species == "*S. enterica*" ~ 0,
+                           partner == "S0240" & species == "*M. extorquens*" ~ 0,
+                           partner == "M0104" & species == "*S. enterica*" ~ 0,
+                           TRUE ~ value)) %>%
+  select(well, OD, strain, partner, species, value, date) %>%
+  pivot_wider(names_from = species, values_from = value) %>%
+  mutate(percent_partner = (`*S. enterica*` + `*M. extorquens*`) / (`*S. enterica*` + `*M. extorquens*` + `*E. coli*`)) %>%
+  mutate(strain = case_when(strain == "E0224" ~ "uninf",
+                            strain == "E0224 F+" ~ "F128+",
+                            strain == "E0224 F+ M13+" ~ "F128+<br>M13+"),
+         strain = factor(strain, levels = c("uninf", "F128+", "F128+<br>M13+"))) %>%
+  mutate(partner = case_when(is.na(partner) ~ "mono",
+                             partner == "S0240" ~ "*S. enterica*",
+                             partner == "M0104" ~ "*M. extorquens*",
+                             partner == "S0240 M0104" ~ "*S. enterica*<br>+<br>*M. extorquens*"),
+         partner = factor(partner, levels = c("mono", "*S. enterica*", "*M. extorquens*", "*S. enterica*<br>+<br>*M. extorquens*"))) %>%
+  mutate(comparison = "composition") %>% rename(value = percent_partner) %>%
+  filter(partner != "mono") %>%
+  group_by(partner) %>%
+  tukey_hsd(value ~ strain) %>%
+  add_xy_position(x = "strain") %>%
+  mutate(label = paste0(scientific(p.adj,digits = 2), " (", p.adj.signif, ")"))
+
+partB <- nov6 %>% filter(well != "G8") %>% rbind(., nov20) %>% filter(!strain %in% c("S0240", "M0104")) %>% 
+  filter(is.na(partner) | partner != "JS002") %>%
   group_by(well, date) %>% filter(OD == max(OD)) %>% slice_head(n = 3) %>% ungroup() %>%
   mutate(value = case_when(is.na(partner) & species == "*S. enterica*" ~ 0,
                            partner == "S0240" & species == "*M. extorquens*" ~ 0,
@@ -116,12 +143,38 @@ partB <- nov6 %>% filter(well != "G8") %>% rbind(., nov20) %>% filter(!strain %i
   stat_summary(aes(fill = strain), position = position_dodge(0.5), fun = mean, shape = '-', size = 5, color = 'black')+
   facet_wrap(~partner, scales = "free_y", ncol = 3) +
   ylab("percent partner") +
-  scale_color_manual(values = c("uninf" = "#F5793A", "F128+" = "#A95AA1", "F128+<br>M13+" = "#0F2080")) +
+  stat_pvalue_manual(stats, label = "label", tip.length = 0.0, size = 3) +
+  scale_y_continuous(expand = expansion(mult = c(0, 0.1))) +
+  scale_color_manual(values = c("uninf" = "black", "F128+" = "#117733", "F128+<br>M13+" = "#88CCEE")) +
   theme_bw(base_size = 16) + theme(axis.text = element_markdown(), axis.title.x = element_blank(),
                                    legend.position = "none", strip.background = element_blank(),
                                    strip.text = element_markdown())
 
 # part C - function
+stats <- nov6 %>% filter(well != "G8") %>% rbind(., nov20) %>% filter(!strain %in% c("S0240", "M0104")) %>% filter(is.na(partner) | partner != "JS002") %>%
+  group_by(well, date) %>% filter(OD == max(OD)) %>% slice_head(n = 3) %>% ungroup() %>%
+  mutate(value = case_when(is.na(partner) & species == "*S. enterica*" ~ 0,
+                           partner == "S0240" & species == "*M. extorquens*" ~ 0,
+                           partner == "M0104" & species == "*S. enterica*" ~ 0,
+                           TRUE ~ value)) %>%
+  select(well, OD, strain, partner, species, value, date) %>%
+  pivot_wider(names_from = species, values_from = value) %>%
+  mutate(total_OD = `*S. enterica*` + `*M. extorquens*` + `*E. coli*`) %>%
+  mutate(strain = case_when(strain == "E0224" ~ "uninf",
+                            strain == "E0224 F+" ~ "F128+",
+                            strain == "E0224 F+ M13+" ~ "F128+<br>M13+"),
+         strain = factor(strain, levels = c("uninf", "F128+", "F128+<br>M13+"))) %>%
+  mutate(partner = case_when(is.na(partner) ~ "mono",
+                             partner == "S0240" ~ "*S. enterica*",
+                             partner == "M0104" ~ "*M. extorquens*",
+                             partner == "S0240 M0104" ~ "*S. enterica*<br>+<br>*M. extorquens*"),
+         partner = factor(partner, levels = c("mono", "*S. enterica*", "*M. extorquens*", "*S. enterica*<br>+<br>*M. extorquens*"))) %>%
+  mutate(comparison = "function") %>% rename(value = total_OD) %>% filter(partner != "mono") %>%
+  group_by(partner) %>%
+  tukey_hsd(value ~ strain) %>%
+  add_xy_position(x = "strain") %>%
+  mutate(label = paste0(scientific(p.adj,digits = 2), " (", p.adj.signif, ")"))
+
 partC <- nov6 %>% filter(well != "G8") %>% rbind(., nov20) %>% filter(!strain %in% c("S0240", "M0104")) %>% filter(is.na(partner) | partner != "JS002") %>%
   group_by(well, date) %>% filter(OD == max(OD)) %>% slice_head(n = 3) %>% ungroup() %>%
   mutate(value = case_when(is.na(partner) & species == "*S. enterica*" ~ 0,
@@ -146,7 +199,9 @@ partC <- nov6 %>% filter(well != "G8") %>% rbind(., nov20) %>% filter(!strain %i
   stat_summary(aes(fill = strain), position = position_dodge(0.5), fun = mean, shape = '-', size = 5, color = 'black')+
   facet_wrap(~partner, scales = "free_y", ncol = 3) +
   ylab("max OD600") +
-  scale_color_manual(values = c("uninf" = "#F5793A", "F128+" = "#A95AA1", "F128+<br>M13+" = "#0F2080")) +
+  stat_pvalue_manual(stats, label = "label", tip.length = 0.0, size = 3) +
+  scale_y_continuous(expand = expansion(mult = c(0, 0.1))) +
+  scale_color_manual(values = c("uninf" = "black", "F128+" = "#117733", "F128+<br>M13+" = "#88CCEE")) +
   theme_bw(base_size = 16) + theme(axis.text = element_markdown(), axis.title.x = element_blank(),
                                    legend.position = "none", strip.background = element_blank(),
                                    strip.text = element_markdown())

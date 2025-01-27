@@ -6,11 +6,14 @@
 library("tidyverse")
 library("readxl")
 library("ggtext")
-library("ggpubr")
 library("cowplot")
-library("broom")
-library("ggVennDiagram")
+library("ggpubr")
+library("rstatix")
 library("ggpubfigs")
+
+#load functions
+source(here::here("functions", "tecan-data-helper-functions.R"))
+source(here::here("functions", "baranyi-helper-functions.R"))
 
 #load data
 setwd(here::here("fba-data", "figure-1", "cobra"))
@@ -53,7 +56,6 @@ pie_charts <- reactions %>% full_join(., rbind(nucleic_acid, amino_acids, ions, 
   scale_fill_manual(values = friendly_pal("vibrant_seven")) +
   coord_polar("y", start = 0) + facet_wrap(~reaction, ncol = 1) + theme_void(base_size = 16) + labs(fill = "")
   
-
 # part C - non-overlapping fluxes
 not_included <- which(!c(fva %>% filter(optimized == "plasmid") %>% select(reaction) %>% pull() %>% unique()) %in% c(subprocesses %>% select(reaction) %>% pull() %>% unique()))
 
@@ -132,7 +134,7 @@ partC <- data.frame(comparison = c("plasmid", "virus with plasmid"),
   xlab("") +
   labs(fill = "", shape = "") +
   theme_bw(base_size = 16)+
-  scale_fill_manual(values = c("F128+" = "#A95AA1", "F128+<br>M13+" = "#0F2080")) +
+  scale_fill_manual(values = c("F128+" = "#117733", "F128+<br>M13+" = "#88CCEE")) +
   theme(axis.text = element_markdown(), axis.title.x = element_blank(),
         legend.position = "none", strip.background = element_blank(),
         axis.title.y = element_markdown())
@@ -159,7 +161,7 @@ partD <- plasmid_by_process %>%
   ylab("percent per subprocess") +
   labs(fill = "", shape = "") +
   theme_bw(base_size = 16)+
-  scale_fill_manual(values = c("F128+" = "#A95AA1", "F128+<br>M13+" = "#0F2080")) +
+  scale_fill_manual(values = c("F128+" = "#117733", "F128+<br>M13+" = "#88CCEE")) +
   theme(axis.text = element_markdown(), axis.title.y = element_blank(),
         legend.position = "none", strip.background = element_blank())
 
@@ -194,9 +196,16 @@ partE <- pfba_plasmid_test %>%
          index_phageplasmid = log2((subprocess_sum_virusplasmid / overall_sum_virusplasmid) / (subprocess_sum_bacteria / overall_sum_bacteria))) %>%
   select(c(index_plasmid, index_phageplasmid, group_name)) %>%
   unique() %>%
-  mutate_all(~replace(., is.nan(.), 0)) %>%
-  filter(!(index_plasmid == 0 & index_phageplasmid == 0)) %>%
-  filter(!(index_plasmid == 0 | index_phageplasmid == 0)) %>%
+  filter(group_name %in% c("Nucleotide Salvage Pathway", "Glycerophospholipid Metabolism",
+                           "Cofactor and Prosthetic Group Biosynthesis", "Cell Envelope Biosynthesis",
+                           "Arginine and Proline Metabolism", "Membrane Lipid Metabolism",
+                           "Lipopolysaccharide Biosynthesis / Recycling", "Unassigned",
+                           "Pyruvate Metabolism", "Tyrosine, Tryptophan, and Phenylalanine Metabolism",
+                           "Valine, Leucine, and Isoleucine Metabolism", "Citric Acid Cycle",
+                           "Cysteine Metabolism", "Purine and Pyrimidine Biosynthesis",
+                           "Threonine and Lysine Metabolism",
+                           "Methionine Metabolism", "Alanine and Aspartate Metabolism", "Histidine Metabolism",
+                           "Pentose Phosphate Pathway", "Anaplerotic Reactions", "Murein Biosynthesis")) %>%
   pivot_longer(cols = index_plasmid:index_phageplasmid, names_to = "comparison") %>%
   mutate(group_name = case_when(group_name == "Tyrosine, Tryptophan, and Phenylalanine Metabolism" ~ "Tyrosine, Tryptophan,Phenylalanine Metabolism", 
                                 group_name == "Cofactor and Prosthetic Group Biosynthesis" ~ "Cofactor Biosynthesis",
@@ -204,22 +213,18 @@ partE <- pfba_plasmid_test %>%
                                 TRUE ~ group_name),
          group_name = tolower(group_name)) %>%
   mutate(comparison = case_when(comparison == "index_plasmid" ~ "F128+", comparison == "index_phageplasmid" ~ "F128+<br>M13+")) %>%
-  #filter(!group_name %in% c("anaplerotic reactions", "arginine and proline metabolism", "pyruvate metabolism", "cysteine metabolism", "nucleotide salvage pathway")) %>%
-  filter(round(value) > 0 | round(value) < 0) %>%
   mutate(direction = ifelse(value > 0, "higher with parasite", "lower with parasite")) %>%
-  rbind(., data.frame(group_name = c("histidine metabolism", "arginine and proline metabolism",
-                                     "cysteine metabolism", "pyruvate metabolism", "nucleotide salvage pathway"),
-                      value = c(0.000005, 0.000005, 0.000005, 0.000005, 0.000005),
-                      comparison = c("F128+<br>M13+", "F128+<br>M13+", "F128+", "F128+", "F128+<br>M13+"),
-                      direction = c("higher with parasite", "higher with parasite", 
-                                    "lower with parasite", "lower with parasite", "lower with parasite"))) %>%
+  rbind(., data.frame(group_name = c("histidine metabolism","histidine metabolism", "alanine and aspartate metabolism", "alanine and aspartate metabolism"),
+                      value = c(0.000005, 0.000005,0.000005, 0.000005),
+                      comparison = c("F128+<br>M13+", "F128+", "F128+<br>M13+", "F128+"),
+                      direction = c("higher with parasite", "lower with parasite", "lower with parasite", "higher with parasite"))) %>%
   ggplot(aes(x = fct_reorder(group_name, value), y = value, fill = comparison)) +
   geom_bar(stat = "identity", position = position_dodge(0.9)) +
   coord_flip() +
   geom_hline(yintercept = 0, color = "red", linetype = "dashed") +
   ylab("log2(fold-change in demand)")+
   theme_bw(base_size = 16)+ facet_wrap(~direction, scales = "free", ncol = 1) +
-  scale_fill_manual(values = c("F128+" = "#A95AA1", "F128+<br>M13+" = "#0F2080")) +
+  scale_fill_manual(values = c("F128+" = "#117733", "F128+<br>M13+" = "#88CCEE")) +
   theme(axis.text = element_markdown(), axis.title.y = element_blank(),
         legend.position = "none", strip.background = element_blank())
 
@@ -233,40 +238,38 @@ e_met <- read_csv("E_metabolites_range.csv") %>% select(-c("...1")) %>% pivot_lo
 e <- read_csv("E_biomass_range.csv") %>% select(-c("...1")) %>% rename(E0 = iJO1366)
 
 bounds <- e %>% mutate(optimized = ifelse(optimized == "virus" & lower_bound == 0, "host", optimized)) %>% pull(lower_bound) %>% unique()
-
 plasmid_bound <- bounds[10]
-
 virus_bound <- bounds[18]
 
-new_e <- e %>% mutate(optimized = ifelse(optimized == "virus" & lower_bound == 0, "host", optimized)) %>% 
+new_e <- e %>% mutate(optimized = ifelse(optimized == "plasmid" & lower_bound == 0, "host", optimized)) %>% 
   filter(lower_bound %in% c(0, plasmid_bound, virus_bound)) %>%
-  filter(optimized != "virus") %>%
-  filter(!(lower_bound == 0 & optimized == "plasmid") & !(lower_bound == 0 & optimized == "virus with plasmid")) %>%
+  filter(!(lower_bound == 0 & optimized == "virus with plasmid")) %>%
   mutate(optimized = ifelse(optimized == "plasmid", "F128+", optimized),
          optimized = ifelse(optimized == "virus with plasmid", "F128+<br>M13+", optimized),
          optimized = ifelse(optimized == "host", "uninf", optimized),
          optimized = factor(optimized, levels = c("uninf", "F128+<br>M13+", "F128+")))
   
-partF <- e_met %>% mutate(optimized = ifelse(optimized == "virus" & lower_bound == 0, "host", optimized)) %>% 
+partF <- e_met %>% mutate(optimized = ifelse(optimized == "plasmid" & lower_bound == 0, "host", optimized)) %>% 
   filter(lower_bound %in% c(0, plasmid_bound, virus_bound)) %>%
-  filter(optimized != "virus") %>%
-  filter(!(lower_bound == 0 & optimized == "plasmid") & !(lower_bound == 0 & optimized == "virus with plasmid")) %>%
-  filter(name %in% c("ac_e", "glyclt_e", "for_e", "hxa_e")) %>%
+  filter(!(lower_bound == 0 & optimized == "virus with plasmid")) %>%
+  filter(name %in% c("ac_e", "glyclt_e", "for_e", "co2_e", "etoh_e", "hxa_e")) %>%
   mutate(optimized = ifelse(optimized == "plasmid", "F128+", optimized),
          optimized = ifelse(optimized == "virus with plasmid", "F128+<br>M13+", optimized),
          optimized = ifelse(optimized == "host", "uninf", optimized),
          optimized = factor(optimized, levels = c("uninf", "F128+<br>M13+", "F128+"))) %>%
   mutate(name = case_when(name == "ac_e" ~ "acetate",
-                          name == "hxa_e" ~ "hexanoate",
                           name == "for_e" ~ "formate",
                           name == "glyclt_e" ~ "glycolate",
+                          name == "hxa_e" ~ "hexanoate",
+                          name == "co2_e" ~ "carbon dioxide",
+                          name == "etoh_e" ~ "ethanol",
                           TRUE ~ name),
-         name = factor(name, levels = c("acetate", "formate", "hexanoate", "glycolate"))) %>%
+         name = factor(name, levels = c("acetate", "formate", "glycolate", "hexanoate", "carbon dioxide", "ethanol"))) %>%
   filter(cycle < 150) %>%
   inner_join(., new_e, by = c("cycle", "optimized", "lower_bound")) %>%
   ggplot(aes(x = cycle, y = log10(concentration / E0), color = optimized)) +
   facet_wrap(~name, ncol = 2, scales = "free_y") +
-  scale_color_manual(values = c("uninf" = "#F5793A", "F128+" = "#A95AA1", "F128+<br>M13+" = "#0F2080")) +
+  scale_color_manual(values = c("uninf" = "black", "F128+" = "#117733", "F128+<br>M13+" = "#88CCEE")) +
   geom_line(linewidth = 1.5) +
   theme_bw(base_size = 16)+
   labs(color = "") +
