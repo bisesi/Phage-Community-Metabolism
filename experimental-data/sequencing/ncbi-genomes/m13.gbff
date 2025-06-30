@@ -1,0 +1,341 @@
+LOCUS       JX412914                6407 bp    DNA     circular PHG 26-AUG-2012
+DEFINITION  Enterobacteria phage M13 isolate WT variety Rutgers, complete
+            genome.
+ACCESSION   JX412914
+VERSION     JX412914.1
+KEYWORDS    .
+SOURCE      Inovirus M13
+  ORGANISM  Inovirus M13
+            Viruses; Monodnaviria; Loebvirae; Hofneiviricota; Faserviricetes;
+            Tubulavirales; Inoviridae; Inovirus.
+REFERENCE   1  (bases 1 to 6407)
+  AUTHORS   Messing,J. and Ayer,J.J.
+  TITLE     Phage M13, WT variety Rutgers
+  JOURNAL   Unpublished
+REFERENCE   2  (bases 1 to 6407)
+  AUTHORS   Messing,J. and Ayer,J.J.
+  TITLE     Direct Submission
+  JOURNAL   Submitted (20-JUL-2012) Waksman Institute of Microbiology, Rutgers,
+            the State University of New Jersey, 190 Frelinghuysen Road,
+            Piscataway, NJ 08854, USA
+COMMENT     ##Assembly-Data-START##
+            Assembly Method       :: DNASTAR Lasergene SeqMan Pro v. 8.0.2(13)
+            Sequencing Technology :: AB3730x1 DNA Analyzer
+            ##Assembly-Data-END##
+FEATURES             Location/Qualifiers
+     source          1..6407
+                     /organism="Inovirus M13"
+                     /mol_type="genomic DNA"
+                     /isolate="WT variety Rutgers"
+                     /host="Escherichia coli"
+                     /db_xref="taxon:1977402"
+                     /country="USA"
+                     /collection_date="07-Apr-2010"
+     gene            join(6006..6407,1..831)
+                     /gene="II"
+     CDS             join(6006..6407,1..831)
+                     /gene="II"
+                     /codon_start=1
+                     /transl_table=11
+                     /product="hypothetical protein"
+                     /protein_id="AFQ21789.1"
+                     /translation="MIDMLVLRLPFIDSLVCSRLSGNDLIAFVDLSKIATLSGINLSA
+                     RTVEYHIDGDLTVSGLSHPFESLPTHYSGIAFKIYEGSKNFYPCVEIKASPAKVLQGH
+                     NVFGTTDLALCSEALLLNFANSLPCLYDLLDVNATTISRIDATFSARAPNENIAKQVI
+                     DHLRNVSNGQTKSTRSQNWESTVTWNETSRHRTLVAYLKHVELQHQIQQLSSKPSAKM
+                     TSYQKEQLKVLSNPDLLEFASGLVRFEARIKTRYLKSFGLPLNLFDAIRFASDYNSQG
+                     KDLIFDLWSFSFSELFKAFEGDSMNIYDDSAVLDAIQSKHFTITPSGKTSFAKASRYF
+                     GFYRRLVNEGYDSVALTMPRNSFWRYVSALVECGIPKSQLMNLSTCNNVVPLVRFINV
+                     DFSSQRPDWYNEPVLKIA"
+     gene            496..831
+                     /gene="X"
+     CDS             496..831
+                     /gene="X"
+                     /codon_start=1
+                     /transl_table=11
+                     /product="hypothetical protein"
+                     /protein_id="AFQ21797.1"
+                     /translation="MNIYDDSAVLDAIQSKHFTITPSGKTSFAKASRYFGFYRRLVNE
+                     GYDSVALTMPRNSFWRYVSALVECGIPKSQLMNLSTCNNVVPLVRFINVDFSSQRPDW
+                     YNEPVLKIA"
+     gene            843..1106
+                     /gene="V"
+     CDS             843..1106
+                     /gene="V"
+                     /codon_start=1
+                     /transl_table=11
+                     /product="helix destabilizing protein"
+                     /protein_id="AFQ21792.1"
+                     /translation="MIKVEIKPSQAQFTTRSGVSRQGKPYSLNEQLCYVDLGNEYPVL
+                     VKITLDEGQPAYAPGLYTVHLSSFKVGQFGSLMIDRLRLVPAK"
+     gene            1108..1209
+                     /gene="VII"
+     CDS             1108..1209
+                     /gene="VII"
+                     /codon_start=1
+                     /transl_table=11
+                     /product="phage assembly protein"
+                     /protein_id="AFQ21794.1"
+                     /translation="MEQVADFDTIYQAMIQISVVLCFALGIIAGGQR"
+     gene            1206..1304
+                     /gene="IX"
+     CDS             1206..1304
+                     /gene="IX"
+                     /codon_start=1
+                     /transl_table=11
+                     /product="hypothetical protein"
+                     /protein_id="AFQ21796.1"
+                     /translation="MSVLVYSFASFVLGWCLRSGITYFTRLMETSS"
+     gene            1301..1522
+                     /gene="VIII"
+     CDS             1301..1522
+                     /gene="VIII"
+                     /note="structural protein"
+                     /codon_start=1
+                     /transl_table=11
+                     /product="major coat protein"
+                     /protein_id="AFQ21795.1"
+                     /translation="MKKSLVLKASVAVATLVPMLSFAAEGDDPAKAAFNSLQASATEY
+                     IGYAWAMVVVIVGATIGIKLFKKFTSKAS"
+     gene            1579..2853
+                     /gene="III"
+     CDS             1579..2853
+                     /gene="III"
+                     /codon_start=1
+                     /transl_table=11
+                     /product="structural protein"
+                     /protein_id="AFQ21790.1"
+                     /translation="MKKLLFAIPLVVPFYSHSAETVESCLAKPHTENSFTNVWKDDKT
+                     LDRYANYEGCLWNATGVVVCTGDETQCYGTWVPIGLAIPENEGGGSEGGGSEGGGSEG
+                     GGTKPPEYGDTPIPGYTYINPLDGTYPPGTEQNPANPNPSLEESQPLNTFMFQNNRFR
+                     NRQGALTVYTGTFTQGTDPVKTYYQYTPVSSKAMYDAYWNGKFRDCAFHSGFNEDPFV
+                     CEYQGQSSDLPQPPVNAGGGSGGGSGGGSEGGGSEGGGSEGGGSEGGGSGGGSGSGDF
+                     DYEKMANANKGAMTENADENALQSDAKGKLDSVATDYGAAIDGFIGDVSGLANGNGAT
+                     GDFAGSNSQMAQVGDGDNSPLMNNFRQYLPSLPQSVECRPFVFGAGKPYEFSIDCDKI
+                     NLFRGVFAFLLYVATFMYVFSTFANILRNKES"
+     variation       1579
+                     /gene="III"
+                     /note="nonsynonymous substitution results in an
+                     alternative methionine start codon"
+                     /compare=V00604.2
+                     /replace="a"
+     variation       1737
+                     /gene="III"
+                     /note="silent mutation"
+                     /compare=V00604.2
+                     /replace="t"
+     variation       2095
+                     /gene="III"
+                     /note="nonsynonymous substitution results in phenylalanine
+                     to valine substitution"
+                     /compare=V00604.2
+                     /replace="g"
+     variation       2710
+                     /gene="III"
+                     /note="nonsynonymous substitution results in glycine to
+                     serine substitution"
+                     /compare=V00604.2
+                     /replace="a"
+     gene            2856..3194
+                     /gene="VI"
+     CDS             2856..3194
+                     /gene="VI"
+                     /codon_start=1
+                     /transl_table=11
+                     /product="small hydrophobic protein"
+                     /protein_id="AFQ21793.1"
+                     /translation="MPVLLGIPLLLRFLGFLLVTLFGYLLTFLKKGFGKIAIAISLFL
+                     ALIIGLNSILVGYLSDISAQLPSDFVQGVQLILPSNALPCFYVILSVKAAIFIFDVKQ
+                     KIVSYLDWDK"
+     gene            3196..4242
+                     /gene="I"
+     CDS             3196..4242
+                     /gene="I"
+                     /codon_start=1
+                     /transl_table=11
+                     /product="phage assembly protein"
+                     /protein_id="AFQ21788.1"
+                     /translation="MAVYFVTGKLGSGKTLVSVGKIQDKIVAGCKIATNLDLRLQNLP
+                     QVGRFAKTPRVLRIPDKPSISDLLAIGRGNDSYDENKNGLLVLDECGTWFNTRSWNDK
+                     ERQPIIDWFLHARKLGWDIIFLVQDLSIVDKQARSALAEHVVYCRRLDRITLPFVGTL
+                     YSLITGSKMPLPKLHVGVVKYGDSQLSPTVERWLYTGKNLYNAYDTKQAFSSNYDSGV
+                     YSYLTPYLSHGRYFKPLNLGQKMKLTKIYLKKFSRVLCLAIGFASAFTYSYITQPKPE
+                     VKKVVSQTYDFDKFTIDSSQRLNLSYRYVFKDSKGKLINSDDLQKQGYSLTYIDLCTV
+                     SIKKGNSNEIVKCN"
+     gene            4220..5500
+                     /gene="IV"
+     CDS             4220..5500
+                     /gene="IV"
+                     /codon_start=1
+                     /transl_table=11
+                     /product="phage assembly protein"
+                     /protein_id="AFQ21791.1"
+                     /translation="MKLLNVINFVFLMFVSSSSFAQVIEMNNSPLRDFVTWYSKQSGE
+                     SVIVSPDVKGTVTVYSSDVKPENLRNFFISVLRANNFDMVGSNPSIIQKYNPNNQDYI
+                     DELPSSDNQEYDDNSAPSGGFFVPQNDNVTQTFKINNVRAKDLIRVVELFVKSNTSKS
+                     SNVLSIDGSNLLVVSAPKDILDNLPQFLSTVDLPTDQILIEGLIFEVQQGDALDFSFA
+                     AGSQRGTVAGGVNTDRLTSVLSSAGGSFGIFNGDVLGLSVRALKTNSHSKILSVPRIL
+                     TLSGQKGSISVGQNVPFITGRVTGESANVNNPFQTIERQNVGISMSVFPVAMAGGNIV
+                     LDITSKADSLSSSTQASDVITNQRSIATTVNLRDGQTLLLGGLTDYKNTSQDSGVPFL
+                     SKIPLIGLLFSSRSDSNEESTLYVLVKATIVRAL"
+     variation       4453
+                     /gene="IV"
+                     /note="silent mutation"
+                     /compare=V00604.2
+                     /replace="t"
+     variation       4471
+                     /gene="IV"
+                     /note="silent mutation"
+                     /compare=V00604.2
+                     /replace="t"
+     variation       4477
+                     /gene="IV"
+                     /note="silent mutation"
+                     /compare=V00604.2
+                     /replace="a"
+     variation       4479..4480
+                     /gene="IV"
+                     /note="nonsynonymous substitution results in arginine to
+                     isoleucine substitution"
+                     /compare=V00604.2
+                     /replace="tt"
+     variation       4489
+                     /gene="IV"
+                     /note="silent mutation"
+                     /compare=V00604.2
+                     /replace="a"
+     variation       4747
+                     /gene="IV"
+                     /note="silent mutation"
+                     /compare=V00604.2
+                     /replace="a"
+     variation       4786
+                     /gene="IV"
+                     /note="silent mutation"
+                     /compare=V00604.2
+                     /replace="t"
+     variation       5374
+                     /gene="IV"
+                     /note="silent mutation"
+                     /compare=V00604.2
+                     /replace="a"
+     variation       5443
+                     /gene="IV"
+                     /note="silent mutation"
+                     /compare=V00604.2
+                     /replace="c"
+     variation       6125
+                     /gene="II"
+                     /note="nonsynonymous substitution results in isoleucine to
+                     methionine substitution"
+                     /compare=V00604.2
+                     /replace="g"
+ORIGIN      
+        1 aacgctacta ctattagtag aattgatgcc accttttcag ctcgcgcccc aaatgaaaat
+       61 atagctaaac aggttattga ccatttgcga aatgtatcta atggtcaaac taaatctact
+      121 cgttcgcaga attgggaatc aactgttaca tggaatgaaa cttccagaca ccgtacttta
+      181 gttgcatatt taaaacatgt tgagctacag caccagattc agcaattaag ctctaagcca
+      241 tccgcaaaaa tgacctctta tcaaaaggag caattaaagg tactctctaa tcctgacctg
+      301 ttggagtttg cttccggtct ggttcgcttt gaagctcgaa ttaaaacgcg atatttgaag
+      361 tctttcgggc ttcctcttaa tctttttgat gcaatccgct ttgcttctga ctataatagt
+      421 cagggtaaag acctgatttt tgatttatgg tcattctcgt tttctgaact gtttaaagca
+      481 tttgaggggg attcaatgaa tatttatgac gattccgcag tattggacgc tatccagtct
+      541 aaacatttta ctattacccc ctctggcaaa acttcttttg caaaagcctc tcgctatttt
+      601 ggtttttatc gtcgtctggt aaacgagggt tatgatagtg ttgctcttac tatgcctcgt
+      661 aattcctttt ggcgttatgt atctgcatta gttgaatgtg gtattcctaa atctcaactg
+      721 atgaatcttt ctacctgtaa taatgttgtt ccgttagttc gttttattaa cgtagatttt
+      781 tcttcccaac gtcctgactg gtataatgag ccagttctta aaatcgcata aggtaattca
+      841 caatgattaa agttgaaatt aaaccatctc aagcccaatt tactactcgt tctggtgttt
+      901 ctcgtcaggg caagccttat tcactgaatg agcagctttg ttacgttgat ttgggtaatg
+      961 aatatccggt tcttgtcaag attactcttg atgaaggtca gccagcctat gcgcctggtc
+     1021 tgtacaccgt tcatctgtcc tctttcaaag ttggtcagtt cggttccctt atgattgacc
+     1081 gtctgcgcct cgttccggct aagtaacatg gagcaggtcg cggatttcga cacaatttat
+     1141 caggcgatga tacaaatctc cgttgtactt tgtttcgcgc ttggtataat cgctgggggt
+     1201 caaagatgag tgttttagtg tattctttcg cctctttcgt tttaggttgg tgccttcgta
+     1261 gtggcattac gtattttacc cgtttaatgg aaacttcctc atgaaaaagt ctttagtcct
+     1321 caaagcctct gtagccgttg ctaccctcgt tccgatgctg tctttcgctg ctgagggtga
+     1381 cgatcccgca aaagcggcct ttaactccct gcaagcctca gcgaccgaat atatcggtta
+     1441 tgcgtgggcg atggttgttg tcattgtcgg cgcaactatc ggtatcaagc tgtttaagaa
+     1501 attcacctcg aaagcaagct gataaaccga tacaattaaa ggctcctttt ggagcctttt
+     1561 tttttggaga ttttcaacgt gaaaaaatta ttattcgcaa ttcctttagt tgttcctttc
+     1621 tattctcact ccgctgaaac tgttgaaagt tgtttagcaa aaccccatac agaaaattca
+     1681 tttactaacg tctggaaaga cgacaaaact ttagatcgtt acgctaacta tgagggctgt
+     1741 ctgtggaatg ctacaggcgt tgtagtttgt actggtgacg aaactcagtg ttacggtaca
+     1801 tgggttccta ttgggcttgc tatccctgaa aatgagggtg gtggctctga gggtggcggt
+     1861 tctgagggtg gcggttctga gggtggcggt actaaacctc ctgagtacgg tgatacacct
+     1921 attccgggct atacttatat caaccctctc gacggcactt atccgcctgg tactgagcaa
+     1981 aaccccgcta atcctaatcc ttctcttgag gagtctcagc ctcttaatac tttcatgttt
+     2041 cagaataata ggttccgaaa taggcagggg gcattaactg tttatacggg cacttttact
+     2101 caaggcactg accccgttaa aacttattac cagtacactc ctgtatcatc aaaagccatg
+     2161 tatgacgctt actggaacgg taaattcaga gactgcgctt tccattctgg ctttaatgag
+     2221 gatccattcg tttgtgaata tcaaggccaa tcgtctgacc tgcctcaacc tcctgtcaat
+     2281 gctggcggcg gctctggtgg tggttctggt ggcggctctg agggtggtgg ctctgagggt
+     2341 ggcggttctg agggtggcgg ctctgaggga ggcggttccg gtggtggctc tggttccggt
+     2401 gattttgatt atgaaaagat ggcaaacgct aataaggggg ctatgaccga aaatgccgat
+     2461 gaaaacgcgc tacagtctga cgctaaaggc aaacttgatt ctgtcgctac tgattacggt
+     2521 gctgctatcg atggtttcat tggtgacgtt tccggccttg ctaatggtaa tggtgctact
+     2581 ggtgattttg ctggctctaa ttcccaaatg gctcaagtcg gtgacggtga taattcacct
+     2641 ttaatgaata atttccgtca atatttacct tccctccctc aatcggttga atgtcgccct
+     2701 tttgtctttg gcgctggtaa accatatgaa ttttctattg attgtgacaa aataaactta
+     2761 ttccgtggtg tctttgcgtt tcttttatat gttgccacct ttatgtatgt attttctacg
+     2821 tttgctaaca tactgcgtaa taaggagtct taatcatgcc agttcttttg ggtattccgt
+     2881 tattattgcg tttcctcggt ttccttctgg taactttgtt cggctatctg cttacttttc
+     2941 ttaaaaaggg cttcggtaag atagctattg ctatttcatt gtttcttgct cttattattg
+     3001 ggcttaactc aattcttgtg ggttatctct ctgatattag cgctcaatta ccctctgact
+     3061 ttgttcaggg tgttcagtta attctcccgt ctaatgcgct tccctgtttt tatgttattc
+     3121 tctctgtaaa ggctgctatt ttcatttttg acgttaaaca aaaaatcgtt tcttatttgg
+     3181 attgggataa ataatatggc tgtttatttt gtaactggca aattaggctc tggaaagacg
+     3241 ctcgttagcg ttggtaagat tcaggataaa attgtagctg ggtgcaaaat agcaactaat
+     3301 cttgatttaa ggcttcaaaa cctcccgcaa gtcgggaggt tcgctaaaac gcctcgcgtt
+     3361 cttagaatac cggataagcc ttctatatct gatttgcttg ctattgggcg cggtaatgat
+     3421 tcctacgatg aaaataaaaa cggcttgctt gttctcgatg agtgcggtac ttggtttaat
+     3481 acccgttctt ggaatgataa ggaaagacag ccgattattg attggtttct acatgctcgt
+     3541 aaattaggat gggatattat ttttcttgtt caggacttat ctattgttga taaacaggcg
+     3601 cgttctgcat tagctgaaca tgttgtttat tgtcgtcgtc tggacagaat tactttacct
+     3661 tttgtcggta ctttatattc tcttattact ggctcgaaaa tgcctctgcc taaattacat
+     3721 gttggcgttg ttaaatatgg cgattctcaa ttaagcccta ctgttgagcg ttggctttat
+     3781 actggtaaga atttgtataa cgcatatgat actaaacagg ctttttctag taattatgat
+     3841 tccggtgttt attcttattt aacgccttat ttatcacacg gtcggtattt caaaccatta
+     3901 aatttaggtc agaagatgaa attaactaaa atatatttga aaaagttttc tcgcgttctt
+     3961 tgtcttgcga ttggatttgc atcagcattt acatatagtt atataaccca acctaagccg
+     4021 gaggttaaaa aggtagtctc tcagacctat gattttgata aattcactat tgactcttct
+     4081 cagcgtctta atctaagcta tcgctatgtt ttcaaggatt ctaagggaaa attaattaat
+     4141 agcgacgatt tacagaagca aggttattca ctcacatata ttgatttatg tactgtttcc
+     4201 attaaaaaag gtaattcaaa tgaaattgtt aaatgtaatt aattttgttt tcttgatgtt
+     4261 tgtttcatca tcttcttttg ctcaggtaat tgaaatgaat aattcgcctc tgcgcgattt
+     4321 tgtaacttgg tattcaaagc aatcaggcga atccgttatt gtttctcccg atgtaaaagg
+     4381 tactgttact gtatattcat ctgacgttaa acctgaaaat ctacgcaatt tctttatttc
+     4441 tgttttacgt gcaaataatt ttgatatggt aggttctaac ccttccatta ttcagaagta
+     4501 taatccaaac aatcaggatt atattgatga attgccatca tctgataatc aggaatatga
+     4561 tgataattcc gctccttctg gtggtttctt tgttccgcaa aatgataatg ttactcaaac
+     4621 ttttaaaatt aataacgttc gggcaaagga tttaatacga gttgtcgaat tgtttgtaaa
+     4681 gtctaatact tctaaatcct caaatgtatt atctattgac ggctctaatc tattagttgt
+     4741 tagtgctcct aaagatattt tagataacct tcctcaattc ctttcaactg ttgatttgcc
+     4801 aactgaccag atattgattg agggtttgat atttgaggtt cagcaaggtg atgctttaga
+     4861 tttttcattt gctgctggct ctcagcgtgg cactgttgca ggcggtgtta atactgaccg
+     4921 cctcacctct gttttatctt ctgctggtgg ttcgttcggt atttttaatg gcgatgtttt
+     4981 agggctatca gttcgcgcat taaagactaa tagccattca aaaatattgt ctgtgccacg
+     5041 tattcttacg ctttcaggtc agaagggttc tatctctgtt ggccagaatg tcccttttat
+     5101 tactggtcgt gtgactggtg aatctgccaa tgtaaataat ccatttcaga cgattgagcg
+     5161 tcaaaatgta ggtatttcca tgagcgtttt tcctgttgca atggctggcg gtaatattgt
+     5221 tctggatatt accagcaagg ccgatagttt gagttcttct actcaggcaa gtgatgttat
+     5281 tactaatcaa agaagtattg ctacaacggt taatttgcgt gatggacaga ctcttttact
+     5341 cggtggcctc actgattata aaaacacttc tcaggattct ggcgtaccgt tcctgtctaa
+     5401 aatcccttta atcggcctcc tgtttagctc ccgctctgat tctaacgagg aaagcacgtt
+     5461 atacgtgctc gtcaaagcaa ccatagtacg cgccctgtag cggcgcatta agcgcggcgg
+     5521 gtgtggtggt tacgcgcagc gtgaccgcta cacttgccag cgccctagcg cccgctcctt
+     5581 tcgctttctt cccttccttt ctcgccacgt tcgccggctt tccccgtcaa gctctaaatc
+     5641 gggggctccc tttagggttc cgatttagtg ctttacggca cctcgacccc aaaaaacttg
+     5701 atttgggtga tggttcacgt agtgggccat cgccctgata gacggttttt cgccctttga
+     5761 cgttggagtc cacgttcttt aatagtggac tcttgttcca aactggaaca acactcaacc
+     5821 ctatctcggg ctattctttt gatttataag ggattttgcc gatttcggcc tattggttaa
+     5881 aaaatgagct gatttaacaa aaatttaacg cgaattttaa caaaatatta acgtttacaa
+     5941 tttaaatatt tgcttataca atcttcctgt ttttggggct tttctgatta tcaaccgggg
+     6001 tacatatgat tgacatgcta gttttacgat taccgttcat cgattctctt gtttgctcca
+     6061 gactctcagg caatgacctg atagcctttg tagacctctc aaaaatagct accctctccg
+     6121 gcattaattt atcagctaga acggttgaat atcatattga tggtgatttg actgtctccg
+     6181 gcctttctca cccttttgaa tctttaccta cacattactc aggcattgca tttaaaatat
+     6241 atgagggttc taaaaatttt tatccttgcg ttgaaataaa ggcttctccc gcaaaagtat
+     6301 tacagggtca taatgttttt ggtacaaccg atttagcttt atgctctgag gctttattgc
+     6361 ttaattttgc taattctttg ccttgcctgt atgatttatt ggatgtt
+//
