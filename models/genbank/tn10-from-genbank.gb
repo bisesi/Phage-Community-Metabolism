@@ -8,8 +8,8 @@ VERSION     AY528506.1
 KEYWORDS    .
 SOURCE      Escherichia coli
   ORGANISM  Escherichia coli
-            Bacteria; Pseudomonadota; Gammaproteobacteria; Enterobacterales;
-            Enterobacteriaceae; Escherichia.
+            Bacteria; Pseudomonadati; Pseudomonadota; Gammaproteobacteria;
+            Enterobacterales; Enterobacteriaceae; Escherichia.
 REFERENCE   1  (bases 1 to 4632)
   AUTHORS   Sawant,A.A., Hegde,N.V. and Jayarao,B.M.
   TITLE     Partial sequence of Tn10 transposon associated with tetracycline
