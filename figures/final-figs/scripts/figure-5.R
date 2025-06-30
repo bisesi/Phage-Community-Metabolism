@@ -265,7 +265,7 @@ stats <- all_interactions %>%
   adjust_pvalue(method = "BH") %>%
   add_significance("p.adj") %>%
   add_xy_position(x = "strain") %>%
-  mutate(label = paste0(scientific(p.adj,digits = 2), " (", p.adj.signif, ")"))
+  mutate(label = paste0(scientific(p.adj,digits = 2), " (", p.adj.signif, ")")) %>% mutate(y.position = y.position * 100)
 
 partA <- all_interactions %>%
   filter(!is.na(interaction)) %>%
@@ -273,24 +273,24 @@ partA <- all_interactions %>%
   mutate(interaction = "mutualism with *∆metB*") %>%
   mutate(strain = case_when(strain %in% c("E0224 F+") ~ "F128+",
                             strain %in% c("E0224 F+ M13+") ~ "F128+<br>M13+",
-                            strain %in% c("E0224") ~ "uninf",
+                            strain %in% c("E0224") ~ "WT",
                             strain %in% c("E0224 O+") ~ "pOX38+",
                             strain %in% c("E0224 O+ M13+") ~ "pOX38+<br>M13+"),
-         strain = factor(strain, levels = c("uninf", "F128+", "F128+<br>M13+", "pOX38+", "pOX38+<br>M13+"))) %>%
-  ggplot(aes(x = strain, y = percent_S, color = strain)) +
+         strain = factor(strain, levels = c("WT", "F128+", "F128+<br>M13+", "pOX38+", "pOX38+<br>M13+"))) %>%
+  ggplot(aes(x = strain, y = percent_S * 100, color = strain)) +
   stat_summary(aes(fill = strain), fun = mean, shape = '-', size = 5, color = 'black')+
   geom_point(size = 2, stroke = 1.5)+
-  ylab("percent *S. enterica*") +
+  ylab("Percent of co-culture<br>composed of *S. enterica*") +
   theme_bw(base_size = 16)+
   facet_wrap(~interaction) +
   geom_hline(yintercept = 0.225, color = "red", linetype = "dashed") +
   stat_pvalue_manual(stats, label = "label", tip.length = 0.0, size = 3) +
   scale_y_continuous(expand = expansion(mult = c(0, 0.1))) +
-  scale_color_manual(values = c("uninf" = "black", "F128+" = "#117733", "F128+<br>M13+" = "#88CCEE", "pOX38+" = "#117733", "pOX38+<br>M13+" = "#88CCEE")) +
+  scale_color_manual(values = c("WT" = "black", "F128+" = "#117733", "F128+<br>M13+" = "#88CCEE", "pOX38+" = "#117733", "pOX38+<br>M13+" = "#88CCEE")) +
   theme(axis.text = element_markdown(), axis.title.x = element_blank(),
         legend.position = "none", strip.background = element_blank(), strip.text = element_markdown(),
         axis.title.y = element_markdown(),
-        axis.text.x = element_text(angle = 90, hjust = 0.5, vjust = 0.5))
+        axis.text.x = element_text(angle = 45, hjust = 0.5, vjust = 0.5))
 
 # part B facilitation
 stats <- all_interactions %>%
@@ -306,7 +306,7 @@ stats <- all_interactions %>%
   adjust_pvalue(method = "BH") %>%
   add_significance("p.adj") %>%
   add_xy_position(x = "strain") %>%
-  mutate(label = paste0(scientific(p.adj,digits = 2), " (", p.adj.signif, ")"))
+  mutate(label = paste0(scientific(p.adj,digits = 2), " (", p.adj.signif, ")")) %>% mutate(y.position = y.position * 100)
 
 partB <- all_interactions %>%
   filter(!is.na(interaction)) %>%
@@ -314,24 +314,24 @@ partB <- all_interactions %>%
   mutate(interaction = "facilitation with *∆metB*") %>%
   mutate(strain = case_when(strain %in% c("E0224 F+") ~ "F128+",
                             strain %in% c("E0224 F+ M13+") ~ "F128+<br>M13+",
-                            strain %in% c("E0224") ~ "uninf",
+                            strain %in% c("E0224") ~ "WT",
                             strain %in% c("E0224 O+") ~ "pOX38+",
                             strain %in% c("E0224 O+ M13+") ~ "pOX38+<br>M13+"),
-         strain = factor(strain, levels = c("uninf", "F128+", "F128+<br>M13+", "pOX38+", "pOX38+<br>M13+"))) %>%
-  ggplot(aes(x = strain, y = percent_S, color = strain)) +
+         strain = factor(strain, levels = c("WT", "F128+", "F128+<br>M13+", "pOX38+", "pOX38+<br>M13+"))) %>%
+  ggplot(aes(x = strain, y = percent_S * 100, color = strain)) +
   stat_summary(aes(fill = strain), fun = mean, shape = '-', size = 5, color = 'black')+
   geom_point(size = 2, stroke = 1.5)+
-  ylab("percent *S. enterica*") +
+  ylab("Percent of co-culture<br>composed of *S. enterica*") +
   theme_bw(base_size = 16)+
   facet_wrap(~interaction) +
   geom_hline(yintercept = 0.103, color = "red", linetype = "dashed") +
   stat_pvalue_manual(stats, label = "label", tip.length = 0.0, size = 3) +
   scale_y_continuous(expand = expansion(mult = c(0, 0.1))) +
-  scale_color_manual(values = c("uninf" = "black", "F128+" = "#117733", "F128+<br>M13+" = "#88CCEE", "pOX38+" = "#117733", "pOX38+<br>M13+" = "#88CCEE")) +
+  scale_color_manual(values = c("WT" = "black", "F128+" = "#117733", "F128+<br>M13+" = "#88CCEE", "pOX38+" = "#117733", "pOX38+<br>M13+" = "#88CCEE")) +
   theme(axis.text = element_markdown(), axis.title.x = element_blank(),
         legend.position = "none", strip.background = element_blank(),
         axis.title.y = element_markdown(), strip.text = element_markdown(),
-        axis.text.x = element_text(angle = 90, hjust = 0.5, vjust = 0.5))
+        axis.text.x = element_text(angle = 45, hjust = 0.5, vjust = 0.5))
 
 # part C - MG1655
 # only F128 M13 to uninf is significant
@@ -357,7 +357,7 @@ stats <- rbind(may21, may20) %>%
          strain = factor(strain, levels = c("uninf", "F128+", "F128+<br>M13+"))) %>%
   tukey_hsd(percent_S ~ strain) %>%
   add_xy_position(x = "strain") %>%
-  mutate(label = paste0(scientific(p.adj,digits = 2), " (", p.adj.signif, ")"))
+  mutate(label = paste0(scientific(p.adj,digits = 2), " (", p.adj.signif, ")")) %>% mutate(y.position = y.position * 100)
 
 partC <- rbind(may21, may20) %>% 
   mutate(strain = ifelse(strain == "MG1655 WT", "MG1655", strain)) %>%
@@ -366,22 +366,23 @@ partC <- rbind(may21, may20) %>%
   filter(grepl("old", strain) == FALSE) %>%
   mutate(interaction = "facilitation with MG1655") %>%
   pivot_wider(names_from = "plate", values_from = "cfu") %>% mutate(percent_S = S / (E + S)) %>% 
-  mutate(strain = case_when(strain == "MG1655" ~ "uninf",
+  mutate(strain = case_when(strain == "MG1655" ~ "WT",
                             strain == "MG1655 F+" ~ "F128+",
                             strain == "MG1655 F+ M13+" ~ "F128+<br>M13+"),
-         strain = factor(strain, levels = c("uninf", "F128+", "F128+<br>M13+"))) %>%
-  ggplot(aes(x = strain, y = percent_S, color = strain)) + 
+         strain = factor(strain, levels = c("WT", "F128+", "F128+<br>M13+"))) %>%
+  ggplot(aes(x = strain, y = percent_S * 100, color = strain)) + 
   stat_summary(aes(fill = strain), fun = mean, shape = '-', size = 5, color = 'black')+
-  geom_point(size = 2, stroke = 1.5)+
-  ylab("percent *S. enterica*") +
+  geom_point(size = 2, stroke = 1.5, shape = 1)+
+  ylab("Percent of co-culture<br>composed of *S. enterica*") +
   theme_bw(base_size = 16)+
   facet_wrap(~interaction) +
   stat_pvalue_manual(stats, label = "label", tip.length = 0.0, size = 3) +
   scale_y_continuous(expand = expansion(mult = c(0, 0.1))) +
-  scale_color_manual(values = c("uninf" = "black", "F128+" = "#117733", "F128+<br>M13+" = "#88CCEE")) +
+  scale_color_manual(values = c("WT" = "black", "F128+" = "#117733", "F128+<br>M13+" = "#88CCEE")) +
   theme(axis.text = element_markdown(), axis.title.x = element_blank(), strip.text = element_markdown(),
                                    legend.position = "none", strip.background = element_blank(),
-                                   axis.title.y = element_markdown())
+                                   axis.title.y = element_markdown(),
+        axis.text.x = element_text(angle = 45, hjust = 0.5, vjust = 0.5))
 
 # part D - plasmid retention rates
 # only pOX M13 to F128, pOX to F128M13 and pOXM13 to pOX significant
@@ -412,36 +413,37 @@ stats <- plasmid_loss %>% filter(strain %in% c("E0224", "E0224 F+", "E0224 F+ M1
   add_xy_position(x = "strain") %>%
   mutate(label = paste0(scientific(p.adj,digits = 2), " (", p.adj.signif, ")")) %>%
   filter((group1 == "F128+" & group2 == "F128+<br>M13+") | (group1 == "F128+" & group2 == "pOX38+") |
-           (group1 == "pOX38+" & group2 == "pOX38+<br>M13+") | (group1 == "F128+<br>M13+" & group2 == "pOX38+<br>M13+"))
+           (group1 == "pOX38+" & group2 == "pOX38+<br>M13+") | (group1 == "F128+<br>M13+" & group2 == "pOX38+<br>M13+")) %>%
+  mutate(y.position = y.position * 100)
 
 partD <- plasmid_loss %>% filter(strain %in% c("E0224", "E0224 F+", "E0224 F+ M13+", "E0224 O+", "E0224 O+ M13+")) %>%
-  mutate(strain = case_when(strain == "E0224" ~ "uninf",
+  mutate(strain = case_when(strain == "E0224" ~ "WT",
                             strain == "E0224 F+" ~ "F128+",
                             strain == "E0224 F+ M13+" ~ "F128+<br>M13+",
                             strain == "E0224 O+ M13+" ~ "pOX38+<br>M13+",
                             strain == "E0224 O+" ~ "pOX38+")) %>%
   filter(partner == "S0240") %>% filter(!well %in% c("E3", "E4")) %>%
   mutate(interaction = "*∆metB* co-culture plasmid retention") %>%
-  ggplot(aes(x = strain, y = percent_retained, color = strain)) +
+  ggplot(aes(x = strain, y = percent_retained * 100, color = strain)) +
   stat_summary(aes(fill = strain), fun = mean, shape = '-', size = 5, color = 'black')+
   geom_point(size = 2, stroke = 1.5)+
-  ylab("percent plasmid +") +
+  ylab("Percent of plasmid-positive<br>*E. coli* at the end of growth") +
   theme_bw(base_size = 16)+
   facet_wrap(~interaction) +
   stat_pvalue_manual(stats, label = "label", tip.length = 0.0, size = 3) +
   scale_y_continuous(expand = expansion(mult = c(0, 0.1))) +
-  scale_color_manual(values = c("uninf" = "black", "F128+" = "#117733", "F128+<br>M13+" = "#88CCEE", "pOX38+" = "#117733", "pOX38+<br>M13+" = "#88CCEE")) +
+  scale_color_manual(values = c("WT" = "black", "F128+" = "#117733", "F128+<br>M13+" = "#88CCEE", "pOX38+" = "#117733", "pOX38+<br>M13+" = "#88CCEE")) +
   theme(axis.text = element_markdown(), axis.title.x = element_blank(),
         legend.position = "none", strip.background = element_blank(),
         axis.title.y = element_markdown(), strip.text = element_markdown(),
-        axis.text.x = element_text(angle = 90, hjust = 0.5, vjust = 0.5))
+        axis.text.x = element_text(angle = 45, hjust = 0.5, vjust = 0.5))
 
 # final figure
 top <- plot_grid(partA, partB, ncol = 2, label_size = 26, labels = c("A", "B"))
 bottom <- plot_grid(partC, partD, ncol = 2, label_size = 26, labels = c("C", "D"))
 figure5 <- plot_grid(top, bottom, ncol = 1)
                     
-png(here::here("figures", "final-figs", "imgs", "figure-5.png"), res = 300, width = 2400, height = 2100)
+png(here::here("figures", "final-figs", "imgs", "figure-5.png"), res = 300, width = 2400, height = 2400)
 figure5
 dev.off()
 

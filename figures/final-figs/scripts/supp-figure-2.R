@@ -18,7 +18,7 @@ lactose <- data.frame(partner = c("F128+", "F128+"), interaction_type = c("mutua
 partA <- lactose %>%
   ggplot(aes(x = interaction_type, y = cfus)) +
   geom_point(size = 2, stroke = 1.5)+
-  ylab("percent lactose positive") +
+  ylab("Percent lactose positive *S. enterica*<br>at the end of co-culture growth in liquid") +
   theme_bw(base_size = 16)+
   geom_hline(yintercept = 1, color = "black", linetype = "dashed") +
   ylim(0, 10)+
@@ -53,7 +53,7 @@ partB <- data_from_LC %>%
   ggplot(aes(x = media, y = conj_rate * 100)) +
   stat_summary(aes(fill = media), fun = mean, shape = '-', size = 5, color = 'black')+
   geom_point(size = 2, stroke = 1.5)+
-  ylab("percent plasmid positive") +
+  ylab("Percent plasmid positive *S. enterica*<br>at the end of co-culture growth on agar") +
   stat_pvalue_manual(stats, label = "label", tip.length = 0.0, size = 3) +
   theme_bw(base_size = 16)+
   theme(axis.text = element_markdown(), axis.title.x = element_blank(),
@@ -67,7 +67,7 @@ liquid <- data.frame(partner = c("F128+", "F128+"), interaction_type = c("mutual
 partC <- liquid %>%
   ggplot(aes(x = interaction_type, y = cfus)) +
   geom_point(size = 2, stroke = 1.5)+
-  ylab("percent plasmid positive") +
+  ylab("Percent plasmid positive *S. enterica*<br>at the end of co-culture growth in liquid") +
   theme_bw(base_size = 16)+
   geom_hline(yintercept = 1, color = "black", linetype = "dashed") +
   ylim(0,10)+
@@ -80,6 +80,6 @@ partC <- liquid %>%
 # final figure
 suppfigure2 <- plot_grid(partA, partB, partC, ncol = 3, label_size = 26, labels = c("A", "B", "C"))
 
-png(here::here("figures", "final-figs", "imgs", "supp-figure-2.png"), res = 300, width = 3000, height = 1250)
+png(here::here("figures", "final-figs", "imgs", "supp-figure-2.png"), res = 300, width = 3000, height = 1500)
 suppfigure2
 dev.off()

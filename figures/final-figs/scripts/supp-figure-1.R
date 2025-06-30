@@ -20,15 +20,40 @@ reactions <- read_csv("core_reactions.csv") %>% select(-c("...1"))
 amino_acids <- c("ala__L_c", "arg__L_c", "asn__L_c", "asp__L_c", "cys__L_c", "gln__L_c", "glu__L_c", "gly_c", "his__L_c", "ile__L_c",
                                        "leu__L_c", "lys__L_c", "met__L_c", "pro__L_c", "ser__L_c", "thr__L_c", "trp__L_c", "tyr__L_c", "val__L_c", "phe__L_c")
 
-bolded <- c("glycine", "arginine", "glutamine", "glutamate", "asparagine", "aspartate", "histidine", "cysteine")
+bolded <- reactions %>% filter(Chemical %in% amino_acids) %>%
+  inner_join(., reactions %>% filter(Chemical %in% amino_acids) %>% group_by(reaction) %>%
+               summarize(total_aa = sum(Coefficient)), by = "reaction") %>% 
+  mutate(percent_aa = Coefficient / total_aa) %>% select(-c(Coefficient, total_aa)) %>% 
+  pivot_wider(names_from = reaction, values_from = percent_aa) %>% filter(host > plasmid & host > virus) %>%
+  mutate(Chemical = case_when(Chemical == "ala__L_c" ~ "alanine",
+                              Chemical == "arg__L_c" ~ "arginine",
+                              Chemical == "asn__L_c" ~ "asparagine",
+                              Chemical == "asp__L_c" ~ "aspartate",
+                              Chemical == "cys__L_c" ~ "cysteine",
+                              Chemical == "gln__L_c" ~ "glutamine",
+                              Chemical == "glu__L_c" ~ "glutamate",
+                              Chemical == "gly_c" ~ "glycine",
+                              Chemical == "his__L_c" ~ "histidine",
+                              Chemical == "ile__L_c" ~ "isoleucine",
+                              Chemical == "leu__L_c" ~ "leucine",
+                              Chemical == "lys__L_c" ~ "lysine",
+                              Chemical == "met__L_c" ~ "methionine",
+                              Chemical == "pro__L_c" ~ "proline",
+                              Chemical == "ser__L_c" ~ "serine",
+                              Chemical == "thr__L_c" ~ "threonine",
+                              Chemical == "trp__L_c" ~ "tryptophan",
+                              Chemical == "tyr__L_c" ~ "tyrosine",
+                              Chemical == "val__L_c" ~ "valine",
+                              Chemical == "phe__L_c" ~ "phenylalanine")) %>%
+  pull(Chemical)
 
 partA <- reactions %>% filter(Chemical %in% amino_acids) %>%
   inner_join(., reactions %>% filter(Chemical %in% amino_acids) %>% group_by(reaction) %>%
                summarize(total_aa = sum(Coefficient)), by = "reaction") %>% 
   mutate(percent_aa = Coefficient / total_aa) %>%
   mutate(reaction = case_when(reaction == "host" ~ "*E. coli*",
-                              reaction == "plasmid" ~ "F128",
-                              reaction == "virus" ~ "M13")) %>%
+                              reaction == "plasmid" ~ "plasmid-F128",
+                              reaction == "virus" ~ "phage-M13")) %>%
   mutate(Chemical = case_when(Chemical == "ala__L_c" ~ "alanine",
                               Chemical == "arg__L_c" ~ "arginine",
                               Chemical == "asn__L_c" ~ "asparagine",
@@ -50,13 +75,52 @@ partA <- reactions %>% filter(Chemical %in% amino_acids) %>%
                               Chemical == "val__L_c" ~ "valine",
                               Chemical == "phe__L_c" ~ "phenylalanine")) %>%
   mutate(Chemical = ifelse(Chemical %in% bolded, paste0("***", Chemical, "***"), Chemical)) %>%
-  ggplot(aes(x = fct_reorder(Chemical, percent_aa), y = percent_aa, fill = reaction)) + 
+  ggplot(aes(x = fct_reorder(Chemical, percent_aa), y = percent_aa * 100, fill = reaction)) + 
   geom_bar(stat = "identity") + 
   theme_bw(base_size = 16) +
-  coord_flip() + ylab("percent of total aa stoichiometry") + 
+  coord_flip() + ylab("Percent of total amino acid stoichiometry") + 
   theme(axis.title.y = element_blank(), axis.text = element_markdown(), legend.position = "none", 
         legend.text = element_markdown(), legend.title = element_blank()) +
-  scale_fill_manual(values = c("*E. coli*" = "black", "F128" = "#117733", "M13" = "#88CCEE"))
+  scale_fill_manual(values = c("*E. coli*" = "black", "plasmid-F128" = "#117733", "phage-M13" = "#88CCEE"))
+
+legendA <- get_plot_component(reactions %>% filter(Chemical %in% amino_acids) %>%
+                                inner_join(., reactions %>% filter(Chemical %in% amino_acids) %>% group_by(reaction) %>%
+                                             summarize(total_aa = sum(Coefficient)), by = "reaction") %>% 
+                                mutate(percent_aa = Coefficient / total_aa) %>%
+                                mutate(reaction = case_when(reaction == "host" ~ "*E. coli*",
+                                                            reaction == "plasmid" ~ "plasmid-F128",
+                                                            reaction == "virus" ~ "phage-M13")) %>%
+                                mutate(Chemical = case_when(Chemical == "ala__L_c" ~ "alanine",
+                                                            Chemical == "arg__L_c" ~ "arginine",
+                                                            Chemical == "asn__L_c" ~ "asparagine",
+                                                            Chemical == "asp__L_c" ~ "aspartate",
+                                                            Chemical == "cys__L_c" ~ "cysteine",
+                                                            Chemical == "gln__L_c" ~ "glutamine",
+                                                            Chemical == "glu__L_c" ~ "glutamate",
+                                                            Chemical == "gly_c" ~ "glycine",
+                                                            Chemical == "his__L_c" ~ "histidine",
+                                                            Chemical == "ile__L_c" ~ "isoleucine",
+                                                            Chemical == "leu__L_c" ~ "leucine",
+                                                            Chemical == "lys__L_c" ~ "lysine",
+                                                            Chemical == "met__L_c" ~ "methionine",
+                                                            Chemical == "pro__L_c" ~ "proline",
+                                                            Chemical == "ser__L_c" ~ "serine",
+                                                            Chemical == "thr__L_c" ~ "threonine",
+                                                            Chemical == "trp__L_c" ~ "tryptophan",
+                                                            Chemical == "tyr__L_c" ~ "tyrosine",
+                                                            Chemical == "val__L_c" ~ "valine",
+                                                            Chemical == "phe__L_c" ~ "phenylalanine")) %>%
+                                mutate(Chemical = ifelse(Chemical %in% bolded, paste0("***", Chemical, "***"), Chemical)) %>%
+                                ggplot(aes(x = fct_reorder(Chemical, percent_aa), y = percent_aa * 100, fill = reaction)) + 
+                                geom_bar(stat = "identity") + 
+                                theme_bw(base_size = 16) +
+                                coord_flip() + ylab("Percent of total amino acid stoichiometry") + 
+                                theme(axis.title.y = element_blank(), axis.text = element_markdown(), legend.position = "bottom", 
+                                      legend.text = element_markdown(), legend.title = element_blank()) +
+                                scale_fill_manual(values = c("*E. coli*" = "black", "plasmid-F128" = "#117733", "phage-M13" = "#88CCEE")),
+                              'guide-box-bottom', return_all = TRUE)
+                              
+all_partA <- plot_grid(partA, legendA, ncol = 1, rel_heights = c(1,0.05))                              
 
 # part B - time series
 setwd(here::here("fba-data", "supp-figure-1"))
@@ -86,19 +150,43 @@ partB <- rbind(es,em,esm) %>%
   rbind(., e) %>%
   mutate(optimized = ifelse(optimized == "plasmid", "F128+", optimized),
          optimized = ifelse(optimized == "virus with plasmid", "F128+<br>M13+", optimized),
-         optimized = ifelse(optimized == "host", "uninf", optimized),
-         optimized = factor(optimized, levels = c("uninf", "F128+", "F128+<br>M13+"))) %>%
+         optimized = ifelse(optimized == "host", "WT", optimized),
+         optimized = factor(optimized, levels = c("WT", "F128+", "F128+<br>M13+"))) %>%
   mutate(name = case_when(name == "E0" ~ "*E. coli*",
                           name == "S0" ~ "*S. enterica*",
                           name == "M0" ~ "*M. extorquens*")) %>%
   mutate(interaction = factor(interaction, levels = c("monoculture", "*S. enterica*", "*M. extorquens*", "*S. enterica*<br>+<br>*M. extorquens*"))) %>%
-  ggplot(aes(x = cycle, y = log10(value), color = name)) +
-  ylab("log10(simulated biomass)") +
+  ggplot(aes(x = cycle, y = log(value), color = name)) +
+  ylab("log(Simulated gDW)") + xlab("Simulated hour") + 
   scale_color_manual(values = c("*E. coli*" = "#004488", "*S. enterica*" = "#DDAA33", "*M. extorquens*" = "#BB5566")) +
   geom_line(linewidth = 2) + facet_grid(interaction~optimized, scales = "free") + theme_bw(base_size = 16) +
   theme(axis.text = element_markdown(),
         legend.position = "none", strip.background = element_blank(),
         strip.text = element_markdown())
+
+legendB <- get_plot_component(rbind(es,em,esm) %>%
+                                mutate(optimized = ifelse(optimized == "plasmid" & lower_bound == 0, "host", optimized)) %>% 
+                                filter(lower_bound %in% c(0, plasmid_bound, virus_bound)) %>%
+                                filter(!(lower_bound == 0 & optimized == "virus with plasmid")) %>%
+                                rbind(., e) %>%
+                                mutate(optimized = ifelse(optimized == "plasmid", "F128+", optimized),
+                                       optimized = ifelse(optimized == "virus with plasmid", "F128+<br>M13+", optimized),
+                                       optimized = ifelse(optimized == "host", "WT", optimized),
+                                       optimized = factor(optimized, levels = c("WT", "F128+", "F128+<br>M13+"))) %>%
+                                mutate(name = case_when(name == "E0" ~ "*E. coli*",
+                                                        name == "S0" ~ "*S. enterica*",
+                                                        name == "M0" ~ "*M. extorquens*")) %>%
+                                mutate(interaction = factor(interaction, levels = c("monoculture", "*S. enterica*", "*M. extorquens*", "*S. enterica*<br>+<br>*M. extorquens*"))) %>%
+                                ggplot(aes(x = cycle, y = log(value), fill = name)) +
+                                ylab("log(Simulated biomass (gDW))") +
+                                scale_fill_manual(values = c("*E. coli*" = "#004488", "*S. enterica*" = "#DDAA33", "*M. extorquens*" = "#BB5566")) +
+                                geom_bar(stat = "identity") + facet_grid(interaction~optimized, scales = "free") + theme_bw(base_size = 16) +
+                                theme(axis.text = element_markdown(), legend.text = element_markdown(),
+                                      legend.position = "bottom", strip.background = element_blank(),
+                                      strip.text = element_markdown()) + labs(fill = ""),
+                              'guide-box-bottom', return_all = TRUE)
+
+all_partB <- plot_grid(partB, legendB, ncol = 1, rel_heights = c(1,0.05))  
 
 # part C - percent partner
 partC <- rbind(es,em,esm) %>%
@@ -107,8 +195,8 @@ partC <- rbind(es,em,esm) %>%
   filter(!(lower_bound == 0 & optimized == "virus with plasmid")) %>%
   mutate(optimized = ifelse(optimized == "plasmid", "F128+", optimized),
          optimized = ifelse(optimized == "virus with plasmid", "F128+<br>M13+", optimized),
-         optimized = ifelse(optimized == "host", "uninf", optimized),
-         optimized = factor(optimized, levels = c("uninf", "F128+", "F128+<br>M13+"))) %>%
+         optimized = ifelse(optimized == "host", "WT", optimized),
+         optimized = factor(optimized, levels = c("WT", "F128+", "F128+<br>M13+"))) %>%
   mutate(name = case_when(name == "E0" ~ "*E. coli*",
                           name == "S0" ~ "*S. enterica*",
                           name == "M0" ~ "*M. extorquens*")) %>% pivot_wider(names_from = name, values_from = value) %>% 
@@ -116,11 +204,11 @@ partC <- rbind(es,em,esm) %>%
   mutate(across(c(`*S. enterica*`, `*M. extorquens*`), ~ ifelse(is.na(.), 0, .))) %>%
   mutate(percent_partner = (`*S. enterica*` + `*M. extorquens*`) / (`*S. enterica*` + `*M. extorquens*` + `*E. coli*`)) %>%
   mutate(interaction = factor(interaction, levels = c("*S. enterica*", "*M. extorquens*", "*S. enterica*<br>+<br>*M. extorquens*"))) %>%
-  ggplot(aes(x = optimized, y = percent_partner, color = optimized)) +
-  geom_point(size = 2, stroke = 1.5) + facet_wrap(~interaction) +
-  scale_color_manual(values = c("uninf" = "black", "F128+" = "#117733", "F128+<br>M13+" = "#88CCEE")) +
+  ggplot(aes(x = optimized, y = percent_partner * 100, fill = optimized)) +
+  geom_bar(stat = "identity") + facet_wrap(~interaction) +
+  scale_fill_manual(values = c("WT" = "black", "F128+" = "#117733", "F128+<br>M13+" = "#88CCEE")) +
   theme_bw(base_size = 16)+
-  ylab("percent partner") +
+  ylab("Percent of co-culture\ncomposed of partner species") +
   theme(axis.text = element_markdown(), axis.title.x = element_blank(),
         legend.position = "none", strip.background = element_blank(), strip.text = element_markdown())
 
@@ -131,8 +219,8 @@ partD <- rbind(es,em,esm) %>%
   filter(!(lower_bound == 0 & optimized == "virus with plasmid")) %>%
   mutate(optimized = ifelse(optimized == "plasmid", "F128+", optimized),
          optimized = ifelse(optimized == "virus with plasmid", "F128+<br>M13+", optimized),
-         optimized = ifelse(optimized == "host", "uninf", optimized),
-         optimized = factor(optimized, levels = c("uninf", "F128+", "F128+<br>M13+"))) %>%
+         optimized = ifelse(optimized == "host", "WT", optimized),
+         optimized = factor(optimized, levels = c("WT", "F128+", "F128+<br>M13+"))) %>%
   mutate(name = case_when(name == "E0" ~ "*E. coli*",
                           name == "S0" ~ "*S. enterica*",
                           name == "M0" ~ "*M. extorquens*")) %>% pivot_wider(names_from = name, values_from = value) %>% 
@@ -140,11 +228,11 @@ partD <- rbind(es,em,esm) %>%
   mutate(across(c(`*S. enterica*`, `*M. extorquens*`), ~ ifelse(is.na(.), 0, .))) %>%
   mutate(total_yield = (`*S. enterica*` + `*M. extorquens*` + `*E. coli*`)) %>%
   mutate(interaction = factor(interaction, levels = c("*S. enterica*", "*M. extorquens*", "*S. enterica*<br>+<br>*M. extorquens*"))) %>%
-  ggplot(aes(x = optimized, y = log10(total_yield), color = optimized)) +
-  geom_point(size = 2, stroke = 1.5) + facet_wrap(~interaction) +
-  scale_color_manual(values = c("uninf" = "black", "F128+" = "#117733", "F128+<br>M13+" = "#88CCEE")) +
+  ggplot(aes(x = optimized, y = log(total_yield), fill = optimized)) +
+  geom_bar(stat = "identity") + facet_wrap(~interaction) +
+  scale_fill_manual(values = c("WT" = "black", "F128+" = "#117733", "F128+<br>M13+" = "#88CCEE")) +
   theme_bw(base_size = 16)+
-  ylab("log10(max biomass)") +
+  ylab("log(Maximum simulated gDW)") +
   theme(axis.text = element_markdown(), axis.title.x = element_blank(),
         legend.position = "none", strip.background = element_blank(), strip.text = element_markdown())
 
@@ -198,7 +286,7 @@ partE <- uptake %>%
   geom_bar(stat = "identity", position = position_dodge(0.9)) + facet_wrap(~interaction, scales = "free") + coord_flip() +
   scale_fill_manual(values = c("F128+" = "#117733", "F128+<br>M13+" = "#88CCEE")) +
   theme_bw(base_size = 16)+
-  ylab("log2(fold-change in partner max uptake)") +
+  ylab("log2(Fold-change in partner maximum uptake)") +
   geom_hline(yintercept = 0, linetype = "dashed", color = "red") +
   theme(axis.text = element_markdown(), axis.title.y = element_blank(),
         legend.position = "none", strip.background = element_blank(), strip.text = element_markdown())
@@ -237,19 +325,31 @@ partF <- secretion %>%
   geom_bar(stat = "identity", position = position_dodge(0.9)) + facet_wrap(~interaction, scales = "free") + coord_flip() +
   scale_fill_manual(values = c("F128+" = "#117733", "F128+<br>M13+" = "#88CCEE")) +
   theme_bw(base_size = 16)+
-  ylab("log2(fold-change in *E. coli* max secretion)") +
+  ylab("log2(Fold-change in *E. coli* maximum secretion)") +
   geom_hline(yintercept = 0, linetype = "dashed", color = "red") +
   theme(axis.text = element_markdown(), axis.title.y = element_blank(), axis.title.x = element_markdown(),
         legend.position = "none", strip.background = element_blank(), strip.text = element_markdown())
 
+legendEF <- get_plot_component(secretion %>%
+                                 ggplot(aes(x = fct_reorder(name, value), y = value, fill = type)) + 
+                                 geom_bar(stat = "identity", position = position_dodge(0.9)) + facet_wrap(~interaction, scales = "free") + coord_flip() +
+                                 scale_fill_manual(values = c("F128+" = "#117733", "F128+<br>M13+" = "#88CCEE")) +
+                                 theme_bw(base_size = 16)+
+                                 ylab("log2(Fold-change in *E. coli* maximum secretion)") + labs(fill = "")+
+                                 geom_hline(yintercept = 0, linetype = "dashed", color = "red") +
+                                 theme(axis.text = element_markdown(), axis.title.y = element_blank(), legend.text = element_markdown(), axis.title.x = element_markdown(),
+                                       legend.position = "bottom", strip.background = element_blank(), strip.text = element_markdown()),
+                              'guide-box-bottom', return_all = TRUE)
+
 # final figure
 right <- plot_grid(partC, partD, ncol = 2, label_size = 26, labels = c("C", "D"))
-left <- plot_grid(partA, partB, ncol = 2, label_size = 26, labels = c("A", "B"))
+left <- plot_grid(all_partA, all_partB, ncol = 2, label_size = 26, labels = c("A", "B"))
 top <- plot_grid(left, right, ncol = 1, rel_heights = c(1, 0.6))
 bottom <- plot_grid(partF, partE, ncol = 2, labels = c("E", "F"), label_size = 26)
-suppfigure1 <- plot_grid(top, bottom, ncol = 1, rel_heights = c(1, 0.5))
+bottom_legend <- plot_grid(bottom, legendEF, ncol = 1, rel_heights = c(1, 0.1))
+suppfigure1 <- plot_grid(top, bottom_legend, ncol = 1, rel_heights = c(1, 0.5))
 
-png(here::here("figures", "final-figs", "imgs", "supp-figure-1.png"), res = 300, width = 4500, height = 4500)
+png(here::here("figures", "final-figs", "imgs", "supp-figure-1.png"), res = 300, width = 4500, height = 4700)
 suppfigure1
 dev.off()
 

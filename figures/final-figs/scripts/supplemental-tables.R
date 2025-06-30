@@ -1,9 +1,8 @@
 ## ATB
-# supplemental tables 1, 4, 6, 
+# supplemental tables 1, 4, 9, 18
 # supplemental table 1 - comets metabolites per cell
 # supplemental table 4 - in vitro metabolites per cell
-# supplemental table 6 - unique gene products in plasmids
-# supplemental table 7 - o and om growth and yield in mono
+# supplemental table 9 - o and om growth and yield in mono
 
 # load packages
 library("chromatographR")
@@ -15,6 +14,7 @@ library("ggpubr")
 library("rstatix")
 library("broom")
 library("genbankr")
+library("ropls")
 
 #load helper functions
 source(here::here("functions", "tecan-data-helper-functions.R"))
@@ -67,7 +67,7 @@ supp1 <- met %>% select(optimized, name, concentration) %>% pivot_wider(names_fr
 
 write.csv(supp1, file = here::here("figures", "final-figs", "tables", "supplemental-table-1.csv"))
 
-# supplemental table 2
+# supplemental table 4
 hplc <- read_csv(here::here("experimental-data", "hplc", "24April2024", "aggregated_signals_24April2024.csv")) %>% dplyr::select(-c("...1")) %>%
   pivot_longer(cols = c(-time), names_to = "sampleID") %>%
   dplyr::mutate(class = case_when(grepl("std", sampleID) == TRUE ~ "standard",
@@ -118,9 +118,199 @@ supp4 <- rbind(lactate_predictions %>% mutate(compound = "lactate"), acetate_pre
 
 write.csv(supp4, file = here::here("figures", "final-figs", "tables", "supplemental-table-4.csv"))
 
-# supplemental table 6 - unique gene products in plasmids
-f128 <- readGenBank(here::here("experimental-data", "sequencing", "f-plasmid-plasmidsaurus", "f128-full-sequence.gb"))
-pox38 <- readGenBank(here::here("experimental-data", "sequencing", "f-plasmid-plasmidsaurus", "pox38-full-sequence.gb"))
+# supplemental table 5
+cfus <- read_csv(here::here("experimental-data", "metabolomics", "spent-media-metabolomics-cfus.csv")) %>%
+  janitor::clean_names() %>% 
+  pull(cfu)
+
+raw_metabolites <- read_excel(here::here("experimental-data", "metabolomics", "ALL_sample_data.xlsx")) %>%
+  janitor::clean_names() %>% dplyr::select(-c(index, q1_da, molecular_weight_da, formula, ionization_model, level, cpd_id, hmdb, pub_chem_cid,
+                                              cas, ch_ebi, metlin, kegg_map, class_i, class_ii)) %>% select(c(compounds, e1_midlog:m_pm3_depleted))
+
+normalized_data <- sweep(raw_metabolites[,-c(1)], 2, cfus / 1e6, FUN = "/")
+
+# set up metadata and data for analysis
+metadata <- data.frame(
+  SampleID = c("e1_midlog", "e2_midlog", "e3_midlog", 
+               "p1_midlog", "p2_midlog", "p3_midlog", 
+               "pm1_midlog", "pm2_midlog", "pm3_midlog",
+               "s_e1_depleted", "s_e2_depleted", "s_e3_depleted", 
+               "s_p1_depleted", "s_p2_depleted", "s_p3_depleted", 
+               "s_pm1_depleted", "s_pm2_depleted", "s_pm3_depleted",
+               "m_pm1_depleted", "m_pm2_depleted", "m_pm3_depleted"),
+  Group = c("WT", "WT", "WT", 
+            "F128+", "F128+", "F128+", 
+            "F128+ M13+", "F128+ M13+", "F128+ M13+",
+            "WT", "WT", "WT", 
+            "F128+", "F128+", "F128+", 
+            "F128+ M13+", "F128+ M13+", "F128+ M13+",
+            "F128+ M13+", "F128+ M13+", "F128+ M13+"),
+  Partner = c(rep(NA, 9), rep("S", 9), rep("M", 3)))
+
+effm <- cbind(raw_metabolites[,1], normalized_data)
+rows_to_remove <- apply(effm[,c(2:dim(effm)[2])], 1, function(row) length(unique(row)) == 1)
+df_filtered <- effm[!rows_to_remove, ]
+
+pseudo <- min(df_filtered[,-1][df_filtered[,-1] > 0], na.rm = TRUE) / 2
+tmp_log <- log2(df_filtered[,-1] + pseudo)
+tmp_log_scaled <- tmp_log |>
+  t() |>
+  scale(center = TRUE, scale = TRUE) %>% t()
+
+###### compare WT
+strain = "WT"
+partner = "S"
+no_compounds <- tmp_log_scaled[, c(metadata$SampleID[metadata$Group == strain]), drop = FALSE]
+rows_to_remove <- apply(no_compounds[,c(2:dim(no_compounds)[2])], 1, function(row) length(unique(row)) == 1)
+tmp <- no_compounds[!rows_to_remove, ]
+
+# get VIP using opls
+class_vector <- factor(c(rep(strain, 3), rep(partner, 3)), levels = c(strain, partner))
+opls_model <- opls(t(tmp), class_vector, crossvalI = 6)
+vip_scores <- getVipVn(opls_model)
+vip_df <- data.frame(compounds = df_filtered[-c(which(rows_to_remove == TRUE)),1], VIP = vip_scores)
+
+# get p values
+group1_cols = c(1:3)
+group2_cols = c(4:6)
+p_values <- apply(tmp, 1, function(x) {
+  group1_vals <- x[group1_cols]
+  group2_vals <- x[group2_cols]
+  
+  # Check for at least 3 non-NA values per group
+  if (sum(!is.na(group1_vals)) >= 3 && sum(!is.na(group2_vals)) >= 3) {
+    t.test(group1_vals, group2_vals, var.equal = TRUE)$p.value
+  } else {
+    NA  # Return NA if too few values
+  }
+})
+
+BH <- p.adjust(p_values, method = "BH")
+partner_cols <- metadata %>% filter(Partner == partner & Group == strain) %>% pull(SampleID)
+baseline_cols <- metadata %>% filter(is.na(Partner) & Group == strain) %>% pull(SampleID)
+fc <- rowMeans(df_filtered[-c(which(rows_to_remove == TRUE)),-c(1)][partner_cols]) / rowMeans(df_filtered[-c(which(rows_to_remove == TRUE)),-c(1)][baseline_cols])
+stats_df_WT <- data.frame(compounds = df_filtered[-c(which(rows_to_remove == TRUE)),1], p_value = p_values, fdr = BH, fold_change = fc) %>%
+  inner_join(., vip_df, by = c("compounds")) %>% mutate(condition = strain, partner = partner)
+
+
+###### compare F128+
+strain = "F128+"
+partner = "S"
+no_compounds <- tmp_log_scaled[, c(metadata$SampleID[metadata$Group == strain]), drop = FALSE]
+rows_to_remove <- apply(no_compounds[,c(2:dim(no_compounds)[2])], 1, function(row) length(unique(row)) == 1)
+tmp <- no_compounds[!rows_to_remove, ]
+
+# get VIP using opls
+class_vector <- factor(c(rep(strain, 3), rep(partner, 3)), levels = c(strain, partner))
+opls_model <- opls(t(tmp), class_vector, crossvalI = 6)
+vip_scores <- getVipVn(opls_model)
+vip_df <- data.frame(compounds = df_filtered[-c(which(rows_to_remove == TRUE)),1], VIP = vip_scores)
+
+# get p values
+group1_cols = c(1:3)
+group2_cols = c(4:6)
+p_values <- apply(tmp, 1, function(x) {
+  group1_vals <- x[group1_cols]
+  group2_vals <- x[group2_cols]
+  
+  # Check for at least 3 non-NA values per group
+  if (sum(!is.na(group1_vals)) >= 3 && sum(!is.na(group2_vals)) >= 3) {
+    t.test(group1_vals, group2_vals, var.equal = TRUE)$p.value
+  } else {
+    NA  # Return NA if too few values
+  }
+})
+
+BH <- p.adjust(p_values, method = "BH")
+partner_cols <- metadata %>% filter(Partner == partner & Group == strain) %>% pull(SampleID)
+baseline_cols <- metadata %>% filter(is.na(Partner) & Group == strain) %>% pull(SampleID)
+fc <- rowMeans(df_filtered[-c(which(rows_to_remove == TRUE)),-c(1)][partner_cols]) / rowMeans(df_filtered[-c(which(rows_to_remove == TRUE)),-c(1)][baseline_cols])
+stats_df_F128 <- data.frame(compounds = df_filtered[-c(which(rows_to_remove == TRUE)),1], p_value = p_values, fdr = BH, fold_change = fc) %>%
+  inner_join(., vip_df, by = c("compounds")) %>% mutate(condition = strain, partner = partner)
+
+
+###### compare F128+ M13+
+strain = "F128+ M13+"
+partner = "S"
+s_phage <- metadata %>% filter(Partner == partner & Group == strain) %>% pull(SampleID)
+base <- metadata %>% filter(is.na(Partner) & Group == strain) %>% pull(SampleID)
+no_compounds <- cbind(tmp_log_scaled[,base], tmp_log_scaled[,s_phage])
+rows_to_remove <- apply(no_compounds[,c(2:dim(no_compounds)[2])], 1, function(row) length(unique(row)) == 1)
+tmp <- no_compounds[!rows_to_remove, ]
+
+# get VIP using opls
+class_vector <- factor(c(rep(strain, 3), rep(partner, 3)), levels = c(strain, partner))
+opls_model <- opls(t(tmp), class_vector, crossvalI = 6)
+vip_scores <- getVipVn(opls_model)
+vip_df <- data.frame(compounds = df_filtered[-c(which(rows_to_remove == TRUE)),1], VIP = vip_scores)
+
+# get p values
+group1_cols = c(1:3)
+group2_cols = c(4:6)
+p_values <- apply(tmp, 1, function(x) {
+  group1_vals <- x[group1_cols]
+  group2_vals <- x[group2_cols]
+  
+  # Check for at least 3 non-NA values per group
+  if (sum(!is.na(group1_vals)) >= 3 && sum(!is.na(group2_vals)) >= 3) {
+    t.test(group1_vals, group2_vals, var.equal = TRUE)$p.value
+  } else {
+    NA  # Return NA if too few values
+  }
+})
+
+BH <- p.adjust(p_values, method = "BH")
+partner_cols <- metadata %>% filter(Partner == partner & Group == strain) %>% pull(SampleID)
+baseline_cols <- metadata %>% filter(is.na(Partner) & Group == strain) %>% pull(SampleID)
+fc <- rowMeans(df_filtered[-c(which(rows_to_remove == TRUE)),-c(1)][partner_cols]) / rowMeans(df_filtered[-c(which(rows_to_remove == TRUE)),-c(1)][baseline_cols])
+stats_df_phage_s <- data.frame(compounds = df_filtered[-c(which(rows_to_remove == TRUE)),1], p_value = p_values, fdr = BH, fold_change = fc) %>%
+  inner_join(., vip_df, by = c("compounds")) %>% mutate(condition = strain, partner = partner)
+
+
+###### compare F128+ M13+
+strain = "F128+ M13+"
+partner = "M"
+s_phage <- metadata %>% filter(Partner == partner & Group == strain) %>% pull(SampleID)
+base <- metadata %>% filter(is.na(Partner) & Group == strain) %>% pull(SampleID)
+no_compounds <- cbind(tmp_log_scaled[,base], tmp_log_scaled[,s_phage])
+rows_to_remove <- apply(no_compounds[,c(2:dim(no_compounds)[2])], 1, function(row) length(unique(row)) == 1)
+tmp <- no_compounds[!rows_to_remove, ]
+
+# get VIP using opls
+class_vector <- factor(c(rep(strain, 3), rep(partner, 3)), levels = c(strain, partner))
+opls_model <- opls(t(tmp), class_vector, crossvalI = 6)
+vip_scores <- getVipVn(opls_model)
+vip_df <- data.frame(compounds = df_filtered[,1], VIP = vip_scores)
+
+# get p values
+group1_cols = c(1:3)
+group2_cols = c(4:6)
+p_values <- apply(tmp, 1, function(x) {
+  group1_vals <- x[group1_cols]
+  group2_vals <- x[group2_cols]
+  
+  # Check for at least 3 non-NA values per group
+  if (sum(!is.na(group1_vals)) >= 3 && sum(!is.na(group2_vals)) >= 3) {
+    t.test(group1_vals, group2_vals, var.equal = TRUE)$p.value
+  } else {
+    NA  # Return NA if too few values
+  }
+})
+
+BH <- p.adjust(p_values, method = "BH")
+partner_cols <- metadata %>% filter(Partner == partner & Group == strain) %>% pull(SampleID)
+baseline_cols <- metadata %>% filter(is.na(Partner) & Group == strain) %>% pull(SampleID)
+fc <- rowMeans(df_filtered[,-c(1)][partner_cols]) / rowMeans(df_filtered[,-c(1)][baseline_cols])
+stats_df_phage_m <- data.frame(compounds = df_filtered[,1], p_value = p_values, fdr = BH, fold_change = fc) %>%
+  inner_join(., vip_df, by = c("compounds")) %>% mutate(condition = strain, partner = partner)
+
+combined <- rbind(stats_df_WT, stats_df_F128, stats_df_phage_s, stats_df_phage_m)
+combined$all_adjust <- p.adjust(combined$p_value, method = "BH")
+
+
+# supplemental table 8 - unique gene products in plasmids
+f128 <- readGenBank(here::here("experimental-data", "sequencing", "ncbi-genomes", "f128-full-sequence.gb"))
+pox38 <- readGenBank(here::here("experimental-data", "sequencing", "ncbi-genomes", "pox38-full-sequence.gb"))
 
 cleaned_pox38 <- exons(pox38) %>% data.frame() %>% select(c("product", "gene", "function."))
 products_o <- cleaned_pox38 %>% pull(product)
@@ -131,13 +321,13 @@ products_f <- cleaned_f128 %>% pull(product)
 f_not_o <- products_f[which(!products_f %in% products_o)]
 o_not_f <- products_o[which(!products_o %in% products_f)][-c(1,2)]
 
-supp6 <- cleaned_f128 %>% filter(product %in% f_not_o) %>% select(product, gene) %>% mutate(genotype = "F128") %>%
+supp8 <- cleaned_f128 %>% filter(product %in% f_not_o) %>% select(product, gene) %>% mutate(genotype = "F128") %>%
   rbind(., cleaned_pox38 %>% filter(product %in% o_not_f) %>% select(product, gene) %>% mutate(genotype = "pOX38")) %>%
   rename(unique_products = product, gene_name = gene)
 
-write.csv(supp6, file = here::here("figures", "final-figs", "tables", "supplemental-table-6.csv"))
+write.csv(supp8, file = here::here("figures", "final-figs", "tables", "supplemental-table-8.csv"))
 
-# supplemental table 7
+# supplemental table 9
 source(here::here("functions", "tecan-data-helper-functions.R"))
 source(here::here("functions", "baranyi-helper-functions.R"))
 
@@ -203,12 +393,10 @@ growthrate <- rbind(july7 %>% mutate(date = "7july"), july29 %>% mutate(date = "
   mutate(strain = ifelse(strain == "E0224 pOX38 WT", "E0224 O+", strain)) %>%
   group_by(strain) %>% summarize(mean = mean(model_fit), sd = sd(model_fit))
 
-supp7 <- rbind(growthrate %>% mutate(type = "growth rate"), maxyield %>% mutate(type = "max OD600")) %>%
+supp9 <- rbind(growthrate %>% mutate(type = "growth rate"), maxyield %>% mutate(type = "max OD600")) %>%
   mutate(strain = case_when(strain == "E0224" ~ "uninf",
                             strain == "E0224 O+" ~ "pOX38+",
                             strain == "E0224 O+ M13+" ~ "pOX38+ M13+"))
 
-write.csv(supp7, file = here::here("figures", "final-figs", "tables", "supplemental-table-7.csv"))
-
-
+write.csv(supp9, file = here::here("figures", "final-figs", "tables", "supplemental-table-9.csv"))
 
