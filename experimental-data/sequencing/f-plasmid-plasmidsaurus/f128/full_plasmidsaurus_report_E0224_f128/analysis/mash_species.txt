@@ -1,0 +1,3 @@
+contig,identity,shared-hashes,median-multiplicity,p-value,query-ID,query-comment,contig_len,kmer_score,query-comment_short
+contig_1,1.0,1000/1000,1.0,0.0,ref|NZ_CP014271.1|,"Escherichia coli K-12 strain DHB4 plasmid F128-(DHB4), complete sequence","232,886",1.0,Escherichia coli K-12 strain DHB4 plasmid F128-(DHB4)
+contig_2,1.0,1000/1000,1.0,0.0,ref|NC_019049.1|,"Escherichia coli plasmid pCM959, complete sequence","4,520,409",1.0,Escherichia coli plasmid pCM959
