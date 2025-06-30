@@ -1,0 +1,3 @@
+contig,identity,shared-hashes,median-multiplicity,p-value,query-ID,query-comment,contig_len,kmer_score,query-comment_short
+contig_1,0.932601,231/1000,1.0,0.0,plasmid_fna/GCF_022354085.1_plasmid.fna,"NZ_CP055056.1 Shigella dysenteriae strain SWHEFF_49 plasmid unnamed1, complete sequence","58,120",0.231,NZ_CP055056.1 Shigella dysenteriae strain SWHEFF_49 plasmid unnamed1
+contig_2,0.999723,4971/5000,1.0,0.0,chrom_fna/GCF_000005845.2_chrom.fna,"NC_000913.3 Escherichia coli str. K-12 substr. MG1655, complete genome","4,619,437",0.9942,NC_000913.3 Escherichia coli str. K-12 substr. MG1655

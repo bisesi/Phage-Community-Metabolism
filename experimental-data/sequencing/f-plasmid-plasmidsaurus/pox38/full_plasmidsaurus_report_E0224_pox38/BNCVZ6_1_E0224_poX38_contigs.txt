@@ -1,0 +1,19 @@
+Node count:                       2
+Edge count:                       2
+Smallest edge overlap (bp):       0
+Largest edge overlap (bp):        0
+Total length (bp):                4677557
+Total length no overlaps (bp):    4677557
+Dead ends:                        0
+Percentage dead ends:             0%
+Connected components:             2
+Largest component (bp):           4619437
+Total length orphaned nodes (bp): 4619437
+N50 (bp):                         4619437
+Shortest node (bp):               58120
+Lower quartile node (bp):         1198449
+Median node (bp):                 2338779
+Upper quartile node (bp):         3479108
+Longest node (bp):                4619437
+Median depth:                     105
+Estimated sequence length (bp):   4619437
